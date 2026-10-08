@@ -191,8 +191,8 @@ body.locked nav,body.locked main{display:none}
   <h1>Expenses</h1>
   <div class="card">
     <h3 id="elabel"></h3>
-    <textarea id="expIn" placeholder="Starbucks coffee 6&#10;Uber to work 12&#10;Electricity bill 85"></textarea>
-    <div class="row"><button class="btn" id="addExp">Add expenses</button><span class="mute">One per line. Amount last. Tap a date below to change the day.</span></div>
+    <textarea id="expIn" placeholder="Starbucks coffee 6&#10;Uber to work 12&#10;Credit Salary 50000"></textarea>
+    <div class="row"><button class="btn" id="addExp">Add expenses</button><span class="mute">One per line, amount last. Earned money? Write credit, from where, amount (like credit Salary 50000). Tap a date below to change the day.</span></div>
   </div>
   <div class="card calcard"><div class="calh"><button id="eprev" aria-label="Previous month">‹</button><b id="emlabel"></b><button id="enext" aria-label="Next month">›</button></div><div class="grid" id="ecal"></div></div>
   <div class="card hide" id="expDetail" style="margin-top:1rem">
@@ -215,12 +215,6 @@ body.locked nav,body.locked main{display:none}
   </div>
   <div class="card" id="brkCard"><h3 id="brkH"></h3><table id="brk"></table></div>
   <div class="card"><h3>By category</h3><div class="pie"><i id="pie"></i><ul class="leg" id="leg"></ul></div></div>
-  <div class="card">
-    <h3>Credit (earnings)</h3>
-    <div class="row" style="margin-top:0"><input id="crIn" placeholder="Salary 50000" style="flex:1;width:auto;min-width:10rem"><input type="date" id="crDate" style="width:auto" aria-label="Date"><button class="btn" id="addCr">Add credit</button></div>
-    <div class="row" style="justify-content:space-between"><span class="mute" id="crH"></span><b id="crTot"></b></div>
-    <table id="crList"></table>
-  </div>
   <div class="card">
     <h3>Check balance</h3>
     <p class="mute">Compares your bank balance with all the credits and expenses recorded here.</p>
@@ -419,18 +413,30 @@ const sumA=a=>a.reduce((t,x)=>t+x.amount,0);
 const moneyS=n=>(n<0?'−':'')+money(Math.abs(n));
 const rawOf=x=>x.raw||`${x.text} ${x.amount}`;
 const catOpts=(ac,sel)=>Object.keys(ac).map(n=>`<option${n===sel?' selected':''}>${esc(n)}</option>`).join('')+(ac[sel]?'':`<option selected>${esc(sel)}</option>`);
+const CRRX=/^\s*credit(?!\s*card)\b/i;
+const crRaw=x=>x.raw||`credit<>${x.text}<>${x.amount}`;
+function parseCreditLine(line){
+ if(!line.includes('<>'))return parseCredit(line.replace(/^\s*credit\s*[:,-]?\s*/i,''));
+ const rest=line.split('<>').slice(1).map(x=>x.trim());
+ if(rest.length===1)return parseCredit(rest[0]);
+ const amount=parseFloat((rest[rest.length-1]||'').replace(/[^0-9.\-]/g,''));
+ if(isNaN(amount))return null;
+ return {amount,text:rest.slice(0,-1).join(' ')||'Credit'};
+}
+const dayItems=day=>[...store.cr.data.filter(x=>x.date===day).map(x=>({...x,_cr:1})),...store.exp.data.filter(x=>x.date===day)];
 function renderExp(){
- const all=store.exp.data,days=new Set(all.map(x=>x.date)),ac=allCats();
+ const days=new Set([...store.exp.data,...store.cr.data].map(x=>x.date)),ac=allCats();
  drawCal($('#ecal'),$('#emlabel'),emonth,expShown?expDay:null,k=>days.has(k));
  $('#elabel').textContent='Add for '+prettyDay(expDay);
  $('#expDetail').classList.toggle('hide',!expShown);
  if(!expShown)return;
- const items=all.filter(x=>x.date===expDay);
+ const items=dayItems(expDay),sp=sumA(items.filter(x=>!x._cr)),gt=sumA(items.filter(x=>x._cr));
  $('#dtLabel').textContent=prettyDay(expDay);
- $('#eTotal').textContent=items.length?money(sumA(items)):'';
- $('#list').innerHTML=items.length?items.map(x=>x.id===editId
-  ?`<tr><td colspan="3"><input id="editIn" value="${esc(rawOf(x))}" aria-label="Edit expense"><div class="row"><select id="editCat">${catOpts(ac,x.cat)}</select><button class="btn" data-save="${x.id}">Save</button><button class="btn ghost" data-cancel="1">Cancel</button></div></td></tr>`
-  :`<tr><td>${catInfo(x.cat).icon} ${esc(rawOf(x))}</td><td class="pen"><button data-edit="${x.id}" aria-label="Edit">✏️</button></td><td class="pen"><button data-del="${x.id}" aria-label="Delete">✕</button></td></tr>`).join(''):'<tr><td class="mute">Nothing logged for this day.</td></tr>';
+ $('#eTotal').textContent=[sp?'Spent '+money(sp):'',gt?'Credit '+money(gt):''].filter(Boolean).join(' · ');
+ $('#list').innerHTML=items.length?items.map(x=>{
+  const raw=x._cr?crRaw(x):rawOf(x);
+  if(x.id===editId)return `<tr><td colspan="3"><input id="editIn" value="${esc(raw)}" aria-label="Edit"><div class="row">${x._cr?'':`<select id="editCat">${catOpts(ac,x.cat)}</select>`}<button class="btn" data-save="${x.id}">Save</button><button class="btn ghost" data-cancel="1">Cancel</button></div></td></tr>`;
+  return `<tr><td>${x._cr?'💰':catInfo(x.cat).icon} ${esc(raw)}</td><td class="pen"><button data-edit="${x.id}" aria-label="Edit">✏️</button></td><td class="pen"><button data-del="${x.id}" aria-label="Delete">✕</button></td></tr>`}).join(''):'<tr><td class="mute">Nothing logged for this day.</td></tr>';
 }
 $('#ecal').onclick=e=>{
  const b=e.target.closest('[data-d]');if(!b)return;
@@ -441,33 +447,56 @@ $('#ecal').onclick=e=>{
 $('#eprev').onclick=()=>{shiftMonth(emonth,-1);renderExp()};
 $('#enext').onclick=()=>{shiftMonth(emonth,1);renderExp()};
 $('#addExp').onclick=async()=>{
- const lines=$('#expIn').value.split('\n').map(x=>x.trim()).filter(Boolean),items=[],bad=[];
- lines.forEach(l=>{const p=parseLine(l);p?items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:expDay,raw:l,...p}):bad.push(l)});
- if(!items.length){toast('Add an amount at the end of each line, like “Lunch 8”.',1);return}
- const before=store.exp.data.slice();store.exp.data=before.concat(items);
- const btn=$('#addExp');btn.disabled=true;
- try{await push('exp','Expenses '+expDay);$('#expIn').value=bad.join('\n');expShown=true;editId=null;const o=items.filter(x=>x.cat==='Other').length;
-  toast(o?`Added ${items.length}. ${o} went to Other: tap ✏️ to change it, or add keywords in Settings.`:`Added ${items.length}`+(bad.length?`, ${bad.length} line(s) had no amount`:''))}
- catch(e){store.exp.data=before;toast(e.message,1)}
+ const lines=$('#expIn').value.split('\n').map(x=>x.trim()).filter(Boolean),items=[],crs=[],crLines=[],bad=[];
+ const nid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+ lines.forEach(l=>{
+  if(CRRX.test(l)){const c=parseCreditLine(l);if(c){crs.push({id:nid(),date:expDay,raw:l,...c});crLines.push(l)}else bad.push(l);return}
+  const p=parseLine(l);p?items.push({id:nid(),date:expDay,raw:l,...p}):bad.push(l);
+ });
+ if(!items.length&&!crs.length){toast('Add an amount at the end, like “Lunch 8” or credit Salary 50000.',1);return}
+ const be=store.exp.data.slice(),bc=store.cr.data.slice(),btn=$('#addExp');btn.disabled=true;
+ store.exp.data=be.concat(items);store.cr.data=bc.concat(crs);
+ let keep=bad.join('\n'),err=null;
+ try{if(items.length)await push('exp','Expenses '+expDay)}catch(e){store.exp.data=be;store.cr.data=bc;err=e;keep=$('#expIn').value}
+ if(!err){try{if(crs.length)await push('cr','Credit '+expDay)}catch(e){store.cr.data=bc;err=e;keep=crLines.concat(bad).join('\n')}}
+ if(err)toast(err.message,1);
+ else{
+  $('#expIn').value=keep;expShown=true;editId=null;
+  const o=items.filter(x=>x.cat==='Other').length;
+  let m='Added '+[items.length?items.length+' expense(s)':'',crs.length?crs.length+' credit(s)':''].filter(Boolean).join(' and ');
+  if(bad.length)m+=`. ${bad.length} line(s) had no amount`;
+  if(o)m+=`. ${o} went to Other: tap ✏️ to change it`;
+  toast(m);
+ }
+ if(err)$('#expIn').value=keep;
  btn.disabled=false;renderExp();
 };
+const findItem=id=>{let it=store.exp.data.find(x=>x.id===id);if(it)return {it,k:'exp'};it=store.cr.data.find(x=>x.id===id);return it?{it,k:'cr'}:null};
 $('#list').onclick=async e=>{
  const b=e.target.closest('button');if(!b)return;const D=b.dataset;
  if(D.edit){editId=D.edit;renderExp();const i=$('#editIn');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}return}
  if(D.cancel){editId=null;renderExp();return}
  if(D.save){
-  const it=store.exp.data.find(x=>x.id===D.save);if(!it)return;
-  const raw=$('#editIn').value.trim(),p=parseLine(raw);
-  if(!p){toast('Put the amount at the end, like “Lunch 8”.',1);return}
-  const snap={...it},sel=$('#editCat').value;
-  it.raw=raw;it.text=p.text;it.amount=p.amount;it.cat=sel!==snap.cat?sel:(raw!==rawOf(snap)?p.cat:snap.cat);
+  const f=findItem(D.save);if(!f)return;
+  const raw=$('#editIn').value.trim(),snap={...f.it};
+  if(f.k==='cr'){
+   const c=CRRX.test(raw)?parseCreditLine(raw):null;
+   if(!c){toast('Write it like credit Salary 50000.',1);return}
+   Object.assign(f.it,{raw,text:c.text,amount:c.amount});
+  }else{
+   const p=parseLine(raw);
+   if(!p){toast('Put the amount at the end, like “Lunch 8”.',1);return}
+   const sel=$('#editCat').value;
+   Object.assign(f.it,{raw,text:p.text,amount:p.amount,cat:sel!==snap.cat?sel:(raw!==rawOf(snap)?p.cat:snap.cat)});
+  }
   editId=null;
-  try{await push('exp','Edit expense')}catch(err){Object.assign(it,snap);toast(err.message,1)}
+  try{await push(f.k,'Edit entry')}catch(err){Object.assign(f.it,snap);toast(err.message,1)}
   renderExp();return;
  }
  if(D.del){
-  const before=store.exp.data.slice();store.exp.data=before.filter(x=>x.id!==D.del);
-  try{await push('exp','Delete expense')}catch(err){store.exp.data=before;toast(err.message,1)}
+  const f=findItem(D.del);if(!f)return;
+  const before=store[f.k].data.slice();store[f.k].data=before.filter(x=>x.id!==D.del);
+  try{await push(f.k,'Delete entry')}catch(err){store[f.k].data=before;toast(err.message,1)}
   renderExp();
  }
 };
@@ -497,10 +526,10 @@ function renderDash(){
  const bk={};
  if(dmode==='month')ex.forEach(x=>bk[x.date]=(bk[x.date]||0)+x.amount);
  if(dmode==='year')ex.forEach(x=>{const m=x.date.slice(0,7);bk[m]=(bk[m]||0)+x.amount});
- $('#brkH').textContent=dmode==='day'?'Spent this day':dmode==='month'?'Spent per day':'Spent per month';
+ $('#brkH').textContent=dmode==='day'?'This day':dmode==='month'?'Spent per day':'Spent per month';
  const keys=Object.keys(bk).sort();
  $('#brk').innerHTML=dmode==='day'
-  ?(ex.length?ex.map(x=>`<tr><td>${catInfo(x.cat).icon} ${esc(rawOf(x))}</td></tr>`).join(''):'<tr><td class="mute">Nothing spent this day.</td></tr>')
+  ?(ex.length||cr.length?cr.map(x=>`<tr><td>💰 ${esc(crRaw(x))}</td></tr>`).join('')+ex.map(x=>`<tr><td>${catInfo(x.cat).icon} ${esc(rawOf(x))}</td></tr>`).join(''):'<tr><td class="mute">Nothing spent this day.</td></tr>')
   :(keys.length?keys.map(k=>`<tr><td>${dmode==='month'?new Date(k+'T00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}):new Date(k+'-01T00:00').toLocaleDateString(undefined,{month:'long'})}</td><td class="n">${money(bk[k])}</td></tr>`).join(''):'<tr><td class="mute">Nothing spent in this period.</td></tr>');
  // pie
  const by={};ex.forEach(x=>by[x.cat]=(by[x.cat]||0)+x.amount);
@@ -508,29 +537,10 @@ function renderDash(){
  const stops=ent.map(([c,v])=>{const st=acc/spent*100;acc+=v;return `${catInfo(c).color} ${st}% ${acc/spent*100}%`});
  $('#pie').style.background=ent.length?`conic-gradient(${stops.join(',')})`:'var(--line)';
  $('#leg').innerHTML=ent.length?ent.map(([c,v])=>`<li><s style="background:${catInfo(c).color}"></s>${catInfo(c).icon} ${esc(c)}: ${money(v)} <span class="mute">(${Math.round(v/spent*100)}%)</span></li>`).join(''):'<li class="mute">No data for this period.</li>';
- // credits
- $('#crH').textContent='Credits in this period';$('#crTot').textContent=cr.length?money(got):'';
- $('#crList').innerHTML=cr.length?cr.map(x=>`<tr><td>${esc(x.text)}<br><span class="mute">${x.date}</span></td><td class="n">${money(x.amount)}</td><td class="pen"><button data-delcr="${x.id}" aria-label="Delete">✕</button></td></tr>`).join(''):'<tr><td class="mute">No credits in this period.</td></tr>';
 }
 $('#seg').onclick=e=>{const b=e.target.closest('[data-m]');if(b){dmode=b.dataset.m;renderDash()}};
 $('#dprev').onclick=()=>stepDash(-1);$('#dnext').onclick=()=>stepDash(1);
 $('#dnow').onclick=()=>{dref=new Date();renderDash()};
-$('#crDate').value=TODAY;
-$('#addCr').onclick=async()=>{
- const p=parseCredit($('#crIn').value.trim()),date=$('#crDate').value||TODAY;
- if(!p){toast('Type what you earned with the amount, like “Salary 50000”.',1);return}
- const before=store.cr.data.slice();
- store.cr.data=before.concat({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),date,...p});
- try{await push('cr','Credit '+date);$('#crIn').value='';dref=new Date(date+'T00:00');toast('Credit added')}
- catch(e){store.cr.data=before;toast(e.message,1)}
- renderDash();
-};
-$('#crList').onclick=async e=>{
- const b=e.target.closest('[data-delcr]');if(!b)return;
- const before=store.cr.data.slice();store.cr.data=before.filter(x=>x.id!==b.dataset.delcr);
- try{await push('cr','Delete credit')}catch(err){store.cr.data=before;toast(err.message,1)}
- renderDash();
-};
 $('#chkBal').onclick=()=>{
  const v=parseFloat($('#bankIn').value.replace(/,/g,''));
  if(isNaN(v)){toast('Enter your bank balance first.',1);return}
