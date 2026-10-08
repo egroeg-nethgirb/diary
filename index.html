@@ -108,6 +108,15 @@ td{border-bottom:1px dashed var(--line)}
 @keyframes pop{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}
 @media(prefers-reduced-motion:reduce){.banner{animation:none}}
 #v-diary,#v-exp{max-width:680px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--panel);color:var(--ink);min-height:44px}
+.seg button.on{background:var(--acc);color:var(--on)}
+#v-dash .card{margin-top:1rem}
+#v-dash h1+.card{margin-top:0}
+.bal{margin-top:1rem;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--line)}
+.bal.ok{background:var(--acc2)}.bal.bad{background:var(--warn)}
+.bal .verdict{font:600 1.25rem Georgia,serif;margin:.6rem 0 .1rem}
+td.pen{width:44px}
 @media(max-width:760px){
  body{display:block}
  nav{position:fixed;left:0;right:0;bottom:0;width:auto;z-index:5;flex-direction:row;gap:0;padding:.25rem .25rem calc(.25rem + env(safe-area-inset-bottom));box-shadow:0 -2px 12px #0003}
@@ -183,24 +192,42 @@ body.locked nav,body.locked main{display:none}
   <div class="card">
     <h3 id="elabel"></h3>
     <textarea id="expIn" placeholder="Starbucks coffee 6&#10;Uber to work 12&#10;Electricity bill 85"></textarea>
-    <div class="row"><button class="btn" id="addExp">Add expenses</button><span class="mute">One per line. Put the amount last.</span></div>
-  </div>
-  <div class="card" style="margin-top:1rem">
-    <div class="row" style="margin:0 0 .3rem;justify-content:space-between"><h3 style="margin:0">Spent</h3><b id="eTotal"></b></div>
-    <table id="list"></table>
+    <div class="row"><button class="btn" id="addExp">Add expenses</button><span class="mute">One per line. Amount last. Tap a date below to change the day.</span></div>
   </div>
   <div class="card calcard"><div class="calh"><button id="eprev" aria-label="Previous month">‹</button><b id="emlabel"></b><button id="enext" aria-label="Next month">›</button></div><div class="grid" id="ecal"></div></div>
+  <div class="card hide" id="expDetail" style="margin-top:1rem">
+    <div class="row" style="margin:0 0 .3rem;justify-content:space-between"><h3 id="dtLabel" style="margin:0"></h3><b id="eTotal"></b></div>
+    <table id="list"></table>
+  </div>
 </section>
 
 <section id="v-dash" class="hide">
   <h1>Dashboard</h1>
-  <div class="card calcard" style="margin-top:0"><div class="calh" style="margin:0"><button id="dprev" aria-label="Previous month">‹</button><b id="dmlabel"></b><button id="dnext" aria-label="Next month">›</button></div></div>
-  <div class="stats">
-    <div><span class="mute">Today</span><b id="sToday"></b></div>
-    <div><span class="mute">Month total</span><b id="sMonth"></b></div>
-    <div><span class="mute">Entries</span><b id="sCount"></b></div>
+  <div class="card">
+    <div class="seg" id="seg"><button data-m="day">Day</button><button data-m="month">Month</button><button data-m="year">Year</button></div>
+    <div class="calh" style="margin:.8rem 0 0"><button id="dprev" aria-label="Previous">‹</button><b id="dlab"></b><button id="dnext" aria-label="Next">›</button></div>
+    <div class="row" style="justify-content:center"><button class="btn ghost" id="dnow"></button></div>
   </div>
+  <div class="stats">
+    <div><span class="mute">Spent</span><b id="sSpent"></b></div>
+    <div><span class="mute">Credit</span><b id="sCredit"></b></div>
+    <div><span class="mute">Left</span><b id="sNet"></b></div>
+  </div>
+  <div class="card" id="brkCard"><h3 id="brkH"></h3><table id="brk"></table></div>
   <div class="card"><h3>By category</h3><div class="pie"><i id="pie"></i><ul class="leg" id="leg"></ul></div></div>
+  <div class="card">
+    <h3>Credit (earnings)</h3>
+    <div class="row" style="margin-top:0"><input id="crIn" placeholder="Salary 50000" style="flex:1;width:auto;min-width:10rem"><input type="date" id="crDate" style="width:auto" aria-label="Date"><button class="btn" id="addCr">Add credit</button></div>
+    <div class="row" style="justify-content:space-between"><span class="mute" id="crH"></span><b id="crTot"></b></div>
+    <table id="crList"></table>
+  </div>
+  <div class="card">
+    <h3>Check balance</h3>
+    <p class="mute">Compares your bank balance with all the credits and expenses recorded here.</p>
+    <input id="bankIn" inputmode="decimal" placeholder="Bank balance, e.g. 25000" aria-label="Bank balance">
+    <div class="row"><button class="btn" id="chkBal">Check</button></div>
+    <div id="balRes" class="bal hide" aria-live="polite"></div>
+  </div>
 </section>
 
 <section id="v-set" class="hide">
@@ -280,8 +307,8 @@ let cfg=JSON.parse(localStorage.getItem('nb_cfg')||'{}'); delete cfg.tok; Object
 const saveCfgLocal=()=>{try{const {tok,...rest}=cfg;localStorage.setItem('nb_cfg',JSON.stringify(rest))}catch(e){}};
 const cur=()=>cfg.cur||'$';
 const money=n=>cur()+(Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
-const FILES={diary:'data/diary.enc.json',exp:'data/expenses.enc.json',set:'data/settings.enc.json'};
-const fresh=()=>({diary:{data:{},sha:null,salt:null,key:null},exp:{data:[],sha:null,salt:null,key:null},set:{data:{custom:[],words:{},shorts:[]},sha:null,salt:null,key:null}});
+const FILES={diary:'data/diary.enc.json',exp:'data/expenses.enc.json',set:'data/settings.enc.json',cr:'data/credits.enc.json'};
+const fresh=()=>({diary:{data:{},sha:null,salt:null,key:null},exp:{data:[],sha:null,salt:null,key:null},set:{data:{custom:[],words:{},shorts:[]},sha:null,salt:null,key:null},cr:{data:[],sha:null,salt:null,key:null}});
 let store=fresh();
 let loaded=false;
 
@@ -387,61 +414,132 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)flushNote()
 addEventListener('pagehide',flushNote);
 
 /* ---------- expenses ---------- */
-let expDay=TODAY,emonth=firstOfMonth();
+let expDay=TODAY,emonth=firstOfMonth(),expShown=false,editId=null;
 const sumA=a=>a.reduce((t,x)=>t+x.amount,0);
+const moneyS=n=>(n<0?'−':'')+money(Math.abs(n));
+const rawOf=x=>x.raw||`${x.text} ${x.amount}`;
+const catOpts=(ac,sel)=>Object.keys(ac).map(n=>`<option${n===sel?' selected':''}>${esc(n)}</option>`).join('')+(ac[sel]?'':`<option selected>${esc(sel)}</option>`);
 function renderExp(){
- const all=store.exp.data,items=all.filter(x=>x.date===expDay),ac=allCats(),days=new Set(all.map(x=>x.date));
- drawCal($('#ecal'),$('#emlabel'),emonth,expDay,k=>days.has(k));
- $('#elabel').textContent=prettyDay(expDay);
+ const all=store.exp.data,days=new Set(all.map(x=>x.date)),ac=allCats();
+ drawCal($('#ecal'),$('#emlabel'),emonth,expShown?expDay:null,k=>days.has(k));
+ $('#elabel').textContent='Add for '+prettyDay(expDay);
+ $('#expDetail').classList.toggle('hide',!expShown);
+ if(!expShown)return;
+ const items=all.filter(x=>x.date===expDay);
+ $('#dtLabel').textContent=prettyDay(expDay);
  $('#eTotal').textContent=items.length?money(sumA(items)):'';
- const opts=Object.keys(ac).map(n=>`<option>${esc(n)}</option>`).join('');
- $('#list').innerHTML=items.length?items.map(x=>{
-  const o=ac[x.cat]?opts.replace(`<option>${esc(x.cat)}</option>`,`<option selected>${esc(x.cat)}</option>`):`<option selected>${esc(x.cat)}</option>`+opts;
-  return `<tr><td>${catInfo(x.cat).icon} ${esc(x.text)}<br><select class="cs" data-cat="${x.id}" aria-label="Category">${o}</select></td><td class="n">${money(x.amount)}</td><td><button data-del="${x.id}" aria-label="Delete">✕</button></td></tr>`}).join(''):'<tr><td class="mute">Nothing logged for this day.</td></tr>';
+ $('#list').innerHTML=items.length?items.map(x=>x.id===editId
+  ?`<tr><td colspan="3"><input id="editIn" value="${esc(rawOf(x))}" aria-label="Edit expense"><div class="row"><select id="editCat">${catOpts(ac,x.cat)}</select><button class="btn" data-save="${x.id}">Save</button><button class="btn ghost" data-cancel="1">Cancel</button></div></td></tr>`
+  :`<tr><td>${catInfo(x.cat).icon} ${esc(rawOf(x))}</td><td class="pen"><button data-edit="${x.id}" aria-label="Edit">✏️</button></td><td class="pen"><button data-del="${x.id}" aria-label="Delete">✕</button></td></tr>`).join(''):'<tr><td class="mute">Nothing logged for this day.</td></tr>';
 }
-$('#ecal').onclick=e=>{const b=e.target.closest('[data-d]');if(b){expDay=b.dataset.d;renderExp();toView($('#elabel'))}};
+$('#ecal').onclick=e=>{
+ const b=e.target.closest('[data-d]');if(!b)return;
+ const k=b.dataset.d;editId=null;
+ if(expShown&&k===expDay)expShown=false;else{expDay=k;expShown=true}
+ renderExp();if(expShown)toView($('#expDetail'));
+};
 $('#eprev').onclick=()=>{shiftMonth(emonth,-1);renderExp()};
 $('#enext').onclick=()=>{shiftMonth(emonth,1);renderExp()};
 $('#addExp').onclick=async()=>{
  const lines=$('#expIn').value.split('\n').map(x=>x.trim()).filter(Boolean),items=[],bad=[];
- lines.forEach(l=>{const p=parseLine(l);p?items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:expDay,...p}):bad.push(l)});
+ lines.forEach(l=>{const p=parseLine(l);p?items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:expDay,raw:l,...p}):bad.push(l)});
  if(!items.length){toast('Add an amount at the end of each line, like “Lunch 8”.',1);return}
  const before=store.exp.data.slice();store.exp.data=before.concat(items);
  const btn=$('#addExp');btn.disabled=true;
- try{await push('exp','Expenses '+expDay);$('#expIn').value=bad.join('\n');const o=items.filter(x=>x.cat==='Other').length;
-  toast(o?`Added ${items.length}. ${o} went to Other: change it in the list, or add keywords in Settings.`:`Added ${items.length}`+(bad.length?`, ${bad.length} line(s) had no amount`:''))}
+ try{await push('exp','Expenses '+expDay);$('#expIn').value=bad.join('\n');expShown=true;editId=null;const o=items.filter(x=>x.cat==='Other').length;
+  toast(o?`Added ${items.length}. ${o} went to Other: tap ✏️ to change it, or add keywords in Settings.`:`Added ${items.length}`+(bad.length?`, ${bad.length} line(s) had no amount`:''))}
  catch(e){store.exp.data=before;toast(e.message,1)}
  btn.disabled=false;renderExp();
 };
 $('#list').onclick=async e=>{
- const b=e.target.closest('[data-del]');if(!b)return;
- const before=store.exp.data.slice();store.exp.data=before.filter(x=>x.id!==b.dataset.del);
- try{await push('exp','Delete expense')}catch(err){store.exp.data=before;toast(err.message,1)}
- renderExp();
+ const b=e.target.closest('button');if(!b)return;const D=b.dataset;
+ if(D.edit){editId=D.edit;renderExp();const i=$('#editIn');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}return}
+ if(D.cancel){editId=null;renderExp();return}
+ if(D.save){
+  const it=store.exp.data.find(x=>x.id===D.save);if(!it)return;
+  const raw=$('#editIn').value.trim(),p=parseLine(raw);
+  if(!p){toast('Put the amount at the end, like “Lunch 8”.',1);return}
+  const snap={...it},sel=$('#editCat').value;
+  it.raw=raw;it.text=p.text;it.amount=p.amount;it.cat=sel!==snap.cat?sel:(raw!==rawOf(snap)?p.cat:snap.cat);
+  editId=null;
+  try{await push('exp','Edit expense')}catch(err){Object.assign(it,snap);toast(err.message,1)}
+  renderExp();return;
+ }
+ if(D.del){
+  const before=store.exp.data.slice();store.exp.data=before.filter(x=>x.id!==D.del);
+  try{await push('exp','Delete expense')}catch(err){store.exp.data=before;toast(err.message,1)}
+  renderExp();
+ }
 };
-$('#list').onchange=async e=>{
- const sel=e.target.closest('[data-cat]');if(!sel)return;
- const it=store.exp.data.find(x=>x.id===sel.dataset.cat);if(!it)return;
- const old=it.cat;it.cat=sel.value;
- try{await push('exp','Change category')}catch(err){it.cat=old;toast(err.message,1)}
- renderExp();
-};
+$('#list').onkeydown=e=>{if(e.key==='Enter'&&e.target.id==='editIn'){e.preventDefault();const b=$('#list [data-save]');if(b)b.click()}};
 
 /* ---------- dashboard ---------- */
-let dmonth=firstOfMonth();
-function renderDash(){
- const all=store.exp.data,mo=ymd(dmonth).slice(0,7),mi=all.filter(x=>x.date.slice(0,7)===mo);
- $('#dmlabel').textContent=dmonth.toLocaleDateString(undefined,{month:'long',year:'numeric'});
- $('#sToday').textContent=money(sumA(all.filter(x=>x.date===TODAY)));
- $('#sMonth').textContent=money(sumA(mi));$('#sCount').textContent=mi.length;
- const tot=sumA(mi),by={};mi.forEach(x=>by[x.cat]=(by[x.cat]||0)+x.amount);
- const ent=Object.entries(by).sort((p,q)=>q[1]-p[1]);
- let acc=0;const stops=ent.map(([c,v])=>{const st=acc/tot*100;acc+=v;return `${catInfo(c).color} ${st}% ${acc/tot*100}%`});
- $('#pie').style.background=ent.length?`conic-gradient(${stops.join(',')})`:'var(--line)';
- $('#leg').innerHTML=ent.length?ent.map(([c,v])=>`<li><s style="background:${catInfo(c).color}"></s>${catInfo(c).icon} ${esc(c)}: ${money(v)} <span class="mute">(${Math.round(v/tot*100)}%)</span></li>`).join(''):'<li class="mute">No data for this month.</li>';
+let dmode='month',dref=new Date();
+const pk=()=>dmode==='day'?ymd(dref):dmode==='month'?ymd(dref).slice(0,7):String(dref.getFullYear());
+function stepDash(n){
+ if(dmode==='day')dref.setDate(dref.getDate()+n);
+ else if(dmode==='month'){dref.setDate(1);dref.setMonth(dref.getMonth()+n)}
+ else dref.setFullYear(dref.getFullYear()+n);
+ renderDash();
 }
-$('#dprev').onclick=()=>{shiftMonth(dmonth,-1);renderDash()};
-$('#dnext').onclick=()=>{shiftMonth(dmonth,1);renderDash()};
+function parseCredit(line){
+ const m=line.match(/(-?\d+(?:[.,]\d+)?)(?!.*\d)/);if(!m)return null;
+ return {amount:parseFloat(m[1].replace(',','.')),text:(line.slice(0,m.index)+line.slice(m.index+m[0].length)).replace(/[$₹€£]/g,'').trim()||'Credit'};
+}
+function renderDash(){
+ const P=pk(),ex=store.exp.data.filter(x=>x.date.startsWith(P)),cr=store.cr.data.filter(x=>x.date.startsWith(P));
+ $$('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.m===dmode));
+ $('#dlab').textContent=dmode==='day'?prettyDay(P):dmode==='month'?dref.toLocaleDateString(undefined,{month:'long',year:'numeric'}):P;
+ $('#dnow').textContent={day:'Today',month:'This month',year:'This year'}[dmode];
+ const spent=sumA(ex),got=sumA(cr);
+ $('#sSpent').textContent=money(spent);$('#sCredit').textContent=money(got);$('#sNet').textContent=moneyS(got-spent);
+ // per-day (month view) or per-month (year view) totals
+ const bk={};
+ if(dmode==='month')ex.forEach(x=>bk[x.date]=(bk[x.date]||0)+x.amount);
+ if(dmode==='year')ex.forEach(x=>{const m=x.date.slice(0,7);bk[m]=(bk[m]||0)+x.amount});
+ $('#brkH').textContent=dmode==='day'?'Spent this day':dmode==='month'?'Spent per day':'Spent per month';
+ const keys=Object.keys(bk).sort();
+ $('#brk').innerHTML=dmode==='day'
+  ?(ex.length?ex.map(x=>`<tr><td>${catInfo(x.cat).icon} ${esc(rawOf(x))}</td></tr>`).join(''):'<tr><td class="mute">Nothing spent this day.</td></tr>')
+  :(keys.length?keys.map(k=>`<tr><td>${dmode==='month'?new Date(k+'T00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}):new Date(k+'-01T00:00').toLocaleDateString(undefined,{month:'long'})}</td><td class="n">${money(bk[k])}</td></tr>`).join(''):'<tr><td class="mute">Nothing spent in this period.</td></tr>');
+ // pie
+ const by={};ex.forEach(x=>by[x.cat]=(by[x.cat]||0)+x.amount);
+ const ent=Object.entries(by).sort((p,q)=>q[1]-p[1]);let acc=0;
+ const stops=ent.map(([c,v])=>{const st=acc/spent*100;acc+=v;return `${catInfo(c).color} ${st}% ${acc/spent*100}%`});
+ $('#pie').style.background=ent.length?`conic-gradient(${stops.join(',')})`:'var(--line)';
+ $('#leg').innerHTML=ent.length?ent.map(([c,v])=>`<li><s style="background:${catInfo(c).color}"></s>${catInfo(c).icon} ${esc(c)}: ${money(v)} <span class="mute">(${Math.round(v/spent*100)}%)</span></li>`).join(''):'<li class="mute">No data for this period.</li>';
+ // credits
+ $('#crH').textContent='Credits in this period';$('#crTot').textContent=cr.length?money(got):'';
+ $('#crList').innerHTML=cr.length?cr.map(x=>`<tr><td>${esc(x.text)}<br><span class="mute">${x.date}</span></td><td class="n">${money(x.amount)}</td><td class="pen"><button data-delcr="${x.id}" aria-label="Delete">✕</button></td></tr>`).join(''):'<tr><td class="mute">No credits in this period.</td></tr>';
+}
+$('#seg').onclick=e=>{const b=e.target.closest('[data-m]');if(b){dmode=b.dataset.m;renderDash()}};
+$('#dprev').onclick=()=>stepDash(-1);$('#dnext').onclick=()=>stepDash(1);
+$('#dnow').onclick=()=>{dref=new Date();renderDash()};
+$('#crDate').value=TODAY;
+$('#addCr').onclick=async()=>{
+ const p=parseCredit($('#crIn').value.trim()),date=$('#crDate').value||TODAY;
+ if(!p){toast('Type what you earned with the amount, like “Salary 50000”.',1);return}
+ const before=store.cr.data.slice();
+ store.cr.data=before.concat({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),date,...p});
+ try{await push('cr','Credit '+date);$('#crIn').value='';dref=new Date(date+'T00:00');toast('Credit added')}
+ catch(e){store.cr.data=before;toast(e.message,1)}
+ renderDash();
+};
+$('#crList').onclick=async e=>{
+ const b=e.target.closest('[data-delcr]');if(!b)return;
+ const before=store.cr.data.slice();store.cr.data=before.filter(x=>x.id!==b.dataset.delcr);
+ try{await push('cr','Delete credit')}catch(err){store.cr.data=before;toast(err.message,1)}
+ renderDash();
+};
+$('#chkBal').onclick=()=>{
+ const v=parseFloat($('#bankIn').value.replace(/,/g,''));
+ if(isNaN(v)){toast('Enter your bank balance first.',1);return}
+ const cr=sumA(store.cr.data),ex=sumA(store.exp.data),should=cr-ex,diff=v-should,ok=Math.abs(diff)<0.005;
+ const r=$('#balRes');r.className='bal '+(ok?'ok':'bad');
+ r.innerHTML=`<table><tr><td>Total credit</td><td class="n">${money(cr)}</td></tr><tr><td>Total expenses</td><td class="n">${money(ex)}</td></tr><tr><td>Should be in the bank</td><td class="n">${moneyS(should)}</td></tr><tr><td>Your bank balance</td><td class="n">${moneyS(v)}</td></tr></table>
+ <p class="verdict">${ok?'✓ Everything matches.':diff<0?`Short by ${money(-diff)}`:`Excess of ${money(diff)}`}</p>
+ <p class="mute" style="margin:0">${ok?'Your records and your bank agree.':diff<0?'The bank has less than your records say. An expense may be missing from the app.':'The bank has more than your records say. A credit may be missing from the app.'}</p>`;
+};
 
 /* ---------- settings: categories, keywords, short forms ---------- */
 function renderSetLists(){
@@ -498,7 +596,7 @@ $('#lockForm').onsubmit=async e=>{
  saveCfgLocal();btn.disabled=true;btn.textContent='Unlocking…';
  try{
   store=fresh();
-  const ex=await Promise.all([pull('diary',pw),pull('exp',pw),pull('set',pw)]);
+  const ex=await Promise.all([pull('diary',pw),pull('exp',pw),pull('set',pw),pull('cr',pw)]);
   const cfm=$('#fCfm').value, cfmShown=!$('#cfmWrap').classList.contains('hide');
   if(!ex[0]&&!ex[1]&&cfm!==pw){
    $('#cfmWrap').classList.remove('hide');$('#fCfm').focus();
