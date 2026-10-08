@@ -270,7 +270,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const TODAY=ymd(new Date());
+let TODAY=ymd(new Date());
 
 /* ---------- keyword dictionary ---------- */
 const CATS={
@@ -297,10 +297,13 @@ function categorize(t){
  for(const [n,c] of Object.entries(ac)) for(const w of c.words) if(rx(w).test(t)) return n;
  return 'Other';
 }
+function toNum(t){
+ return /^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)?parseFloat(t.replace(/,/g,'')):parseFloat(t.replace(',','.'));
+}
 function parseLine(line){
- const m=line.match(/(-?\d+(?:[.,]\d+)?)(?!.*\d)/);
+ const m=line.match(/(-?\d+(?:,\d{3})*(?:[.,]\d+)?)(?!.*\d)/);
  if(!m) return null;
- const amount=parseFloat(m[1].replace(',','.'));
+ const amount=toNum(m[1]);
  let text=(line.slice(0,m.index)+line.slice(m.index+m[0].length)).replace(/[$₹€£]/g,'').trim()||'Expense';
  let forced=null;const shorts=SD().shorts||[];
  text=text.split(/\s+/).map(w=>{const x=shorts.find(q=>q.k===w.toLowerCase());if(x){if(x.cat&&x.cat!=='auto')forced=x.cat;return x.text}return w}).join(' ');
@@ -314,7 +317,7 @@ const saveCfgLocal=()=>{try{const {tok,...rest}=cfg;localStorage.setItem('nb_cfg
 const cur=()=>cfg.cur||'$';
 const money=n=>cur()+(Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
 const FILES={diary:'data/diary.enc.json',exp:'data/expenses.enc.json',set:'data/settings.enc.json',cr:'data/credits.enc.json'};
-const fresh=()=>({diary:{data:{},sha:null,salt:null,key:null},exp:{data:[],sha:null,salt:null,key:null},set:{data:{custom:[],words:{},shorts:[]},sha:null,salt:null,key:null},cr:{data:[],sha:null,salt:null,key:null}});
+const fresh=()=>({diary:{data:{},sha:null,salt:null,key:null,base:null},exp:{data:[],sha:null,salt:null,key:null,base:null},set:{data:{custom:[],words:{},shorts:[]},sha:null,salt:null,key:null,base:null},cr:{data:[],sha:null,salt:null,key:null,base:null}});
 let store=fresh();
 let loaded=false;
 
@@ -327,6 +330,8 @@ async function deriveKey(pw,salt){
  const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
 }
+let keyCache=new Map(),shared=null;
+function keyFor(pw,b64,salt){if(!keyCache.has(b64))keyCache.set(b64,deriveKey(pw,salt));return keyCache.get(b64)}
 async function encryptObj(st){
  const iv=crypto.getRandomValues(new Uint8Array(12));
  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},st.key,new TextEncoder().encode(JSON.stringify(st.data)));
@@ -342,30 +347,70 @@ async function gh(path,opt={}){
 async function pull(key,pw){
  const st=store[key], r=await gh(FILES[key]);
  if(r.status===404){
-  st.sha=null;st.salt=crypto.getRandomValues(new Uint8Array(16));st.key=await deriveKey(pw,st.salt);return false;
+  st.sha=null;st.salt=crypto.getRandomValues(new Uint8Array(16));st.key=null;st.base=JSON.stringify(st.data);return false;
  }
  if(!r.ok) throw new Error(r.status===401||r.status===403?'Token rejected. Check its repo access and Contents permission.':'GitHub error '+r.status);
  const j=await r.json(), env=JSON.parse(b64dec(j.content));
- st.salt=fromB64(env.salt);st.key=await deriveKey(pw,st.salt);
+ st.salt=fromB64(env.salt);st.key=await keyFor(pw,env.salt,st.salt);
  try{
   const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:fromB64(env.iv)},st.key,fromB64(env.data));
-  st.data=JSON.parse(new TextDecoder().decode(pt));st.sha=j.sha;
+  st.data=JSON.parse(new TextDecoder().decode(pt));st.sha=j.sha;st.base=JSON.stringify(st.data);
  }catch(e){throw new Error('WRONG_PW')}
  return true;
 }
 let _q=Promise.resolve();
 const enqueue=fn=>{const p=_q.then(fn);_q=p.catch(()=>{});return p};
 function push(key,msg){return enqueue(()=>pushNow(key,msg))}
+function mergeData(key,local,base,remote){
+ if(key==='exp'||key==='cr'){
+  const bm=new Map(base.map(x=>[x.id,JSON.stringify(x)])),lm=new Map(local.map(x=>[x.id,x])),out=[],seen=new Set();
+  for(const x of remote){
+   if(!lm.has(x.id)&&bm.has(x.id))continue; // deleted here
+   const l=lm.get(x.id);out.push(l&&JSON.stringify(l)!==bm.get(x.id)?l:x);seen.add(x.id);
+  }
+  for(const x of local)if(!seen.has(x.id)&&!bm.has(x.id))out.push(x); // added here
+  return out;
+ }
+ if(key==='diary'){
+  const out={...remote};
+  for(const k of new Set([...Object.keys(local),...Object.keys(base)])){
+   if(local[k]===base[k])continue;
+   if(k in local)out[k]=local[k];else delete out[k];
+  }
+  return out;
+ }
+ return JSON.stringify(local)!==JSON.stringify(base)?local:remote;
+}
+/* re-fetch the latest file, merge our unsaved change into it; true if merged */
+async function mergeRemote(key){
+ const st=store[key],r=await gh(FILES[key]);
+ if(!r.ok)return false;
+ const j=await r.json(),env=JSON.parse(b64dec(j.content));
+ const rk=keyCache.get(env.salt);if(!rk)return false;
+ let remote;
+ try{remote=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:fromB64(env.iv)},await rk,fromB64(env.data))))}catch(e){return false}
+ const base=st.base?JSON.parse(st.base):(Array.isArray(st.data)?[]:{});
+ st.data=mergeData(key,st.data,base,remote);st.sha=j.sha;st.base=JSON.stringify(remote);
+ return true;
+}
 async function pushNow(key,msg){
  if(!ready()||!loaded) throw new Error('Locked. Log in again.');
  const st=store[key];
- const body={message:msg,content:b64enc(await encryptObj(st)),branch:cfg.branch||'main'};
- if(st.sha) body.sha=st.sha;
- const r=await gh(FILES[key],{method:'PUT',body:JSON.stringify(body),keepalive:true});
- if(r.status===409||r.status===422) throw new Error('The file changed elsewhere. Lock, log in again to load the latest, then retry.');
- if(r.status===404) throw new Error('Repo not found. Check the name and that the token can access it.');
- if(!r.ok) throw new Error(r.status===401||r.status===403?'Token rejected. It needs Contents: read and write on this repo.':'GitHub error '+r.status);
- st.sha=(await r.json()).content.sha;
+ if(shared&&st.salt!==shared.salt){st.salt=shared.salt;st.key=shared.key} // migrate to the shared key
+ for(let attempt=0;attempt<3;attempt++){
+  const body={message:msg,content:b64enc(await encryptObj(st)),branch:cfg.branch||'main'};
+  if(st.sha) body.sha=st.sha;
+  const json=JSON.stringify(body);
+  // browsers reject keepalive bodies over 64 KB, so only use it for small saves
+  const r=await gh(FILES[key],{method:'PUT',body:json,keepalive:json.length<60000});
+  if(r.status===409||r.status===422){
+   if(attempt<2&&await mergeRemote(key))continue;
+   throw new Error('The file changed elsewhere and could not be merged. Lock, log in again to load the latest, then retry.');
+  }
+  if(r.status===404) throw new Error('Repo not found. Check the name and that the token can access it.');
+  if(!r.ok) throw new Error(r.status===401||r.status===403?'Token rejected. It needs Contents: read and write on this repo.':'GitHub error '+r.status);
+  st.sha=(await r.json()).content.sha;st.base=JSON.stringify(st.data);return;
+ }
 }
 
 /* ---------- ui helpers ---------- */
@@ -524,8 +569,8 @@ function stepDash(n){
  renderDash();
 }
 function parseCredit(line){
- const m=line.match(/(-?\d+(?:[.,]\d+)?)(?!.*\d)/);if(!m)return null;
- return {amount:parseFloat(m[1].replace(',','.')),text:(line.slice(0,m.index)+line.slice(m.index+m[0].length)).replace(/[$₹€£]/g,'').trim()||'Credit'};
+ const m=line.match(/(-?\d+(?:,\d{3})*(?:[.,]\d+)?)(?!.*\d)/);if(!m)return null;
+ return {amount:toNum(m[1]),text:(line.slice(0,m.index)+line.slice(m.index+m[0].length)).replace(/[$₹€£]/g,'').trim()||'Credit'};
 }
 function renderDash(){
  const P=pk(),ex=store.exp.data.filter(x=>x.date.startsWith(P)),cr=store.cr.data.filter(x=>x.date.startsWith(P));
@@ -545,10 +590,10 @@ function renderDash(){
   :(keys.length?keys.map(k=>`<tr><td>${dmode==='month'?new Date(k+'T00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}):new Date(k+'-01T00:00').toLocaleDateString(undefined,{month:'long'})}</td><td class="n">${money(bk[k])}</td></tr>`).join(''):'<tr><td class="mute">Nothing spent in this period.</td></tr>');
  // pie
  const by={};ex.forEach(x=>by[x.cat]=(by[x.cat]||0)+x.amount);
- const ent=Object.entries(by).sort((p,q)=>q[1]-p[1]);let acc=0;
- const stops=ent.map(([c,v])=>{const st=acc/spent*100;acc+=v;return `${catInfo(c).color} ${st}% ${acc/spent*100}%`});
+ const ent=Object.entries(by).filter(e=>e[1]>0).sort((p,q)=>q[1]-p[1]);let acc=0;const tot=ent.reduce((t,e)=>t+e[1],0);
+ const stops=ent.map(([c,v])=>{const st=acc/tot*100;acc+=v;return `${catInfo(c).color} ${st}% ${acc/tot*100}%`});
  $('#pie').style.background=ent.length?`conic-gradient(${stops.join(',')})`:'var(--line)';
- $('#leg').innerHTML=ent.length?ent.map(([c,v])=>`<li><s style="background:${catInfo(c).color}"></s>${catInfo(c).icon} ${esc(c)}: ${money(v)} <span class="mute">(${Math.round(v/spent*100)}%)</span></li>`).join(''):'<li class="mute">No data for this period.</li>';
+ $('#leg').innerHTML=ent.length?ent.map(([c,v])=>`<li><s style="background:${catInfo(c).color}"></s>${catInfo(c).icon} ${esc(c)}: ${money(v)} <span class="mute">(${Math.round(v/tot*100)}%)</span></li>`).join(''):'<li class="mute">No data for this period.</li>';
 }
 $('#seg').onclick=e=>{const b=e.target.closest('[data-m]');if(b){dmode=b.dataset.m;renderDash()}};
 $('#dprev').onclick=()=>stepDash(-1);$('#dnext').onclick=()=>stepDash(1);
@@ -569,7 +614,7 @@ function renderSetLists(){
  const opts=names.map(n=>`<option>${esc(n)}</option>`).join('');
  $('#kwCat').innerHTML=opts;$('#shCat').innerHTML='<option value="auto">Auto</option>'+opts;
  $('#catList').innerHTML=names.map(n=>`<li>${ac[n].icon} ${esc(n)}${custom.some(c=>c.name===n)?`<button data-delcat="${esc(n)}" aria-label="Remove ${esc(n)}">✕</button>`:''}</li>`).join('');
- $('#kwList').innerHTML=Object.entries(sd.words||{}).flatMap(([c,ws])=>ws.map(w=>`<li>${esc(w)} → ${esc(c)}<button data-delkw="${esc(c)}|${esc(w)}" aria-label="Remove">✕</button></li>`)).join('')||'<li class="mute">None yet</li>';
+ $('#kwList').innerHTML=Object.entries(sd.words||{}).flatMap(([c,ws])=>ws.map(w=>`<li>${esc(w)} → ${esc(c)}<button data-delkw="${encodeURIComponent(c)}|${encodeURIComponent(w)}" aria-label="Remove">✕</button></li>`)).join('')||'<li class="mute">None yet</li>';
  $('#shList').innerHTML=(sd.shorts||[]).map(x=>`<li><b>${esc(x.k)}</b>&nbsp;→ ${esc(x.text)}${x.cat&&x.cat!=='auto'?' ('+esc(x.cat)+')':''}<button data-delsh="${esc(x.k)}" aria-label="Remove">✕</button></li>`).join('')||'<li class="mute">None yet</li>';
 }
 async function saveSet(fn){
@@ -594,7 +639,7 @@ $('#addSh').onclick=()=>{
 $('#v-set').addEventListener('click',e=>{
  const b=e.target.closest('button'),D=b&&b.dataset;if(!D)return;
  if(D.delcat)saveSet(()=>{SD().custom=SD().custom.filter(c=>c.name!==D.delcat);if(SD().words)delete SD().words[D.delcat]});
- else if(D.delkw){const [c,w]=D.delkw.split('|');saveSet(()=>{SD().words[c]=SD().words[c].filter(x=>x!==w)})}
+ else if(D.delkw){const [c,w]=D.delkw.split('|').map(decodeURIComponent);saveSet(()=>{SD().words[c]=SD().words[c].filter(x=>x!==w)})}
  else if(D.delsh)saveSet(()=>{SD().shorts=SD().shorts.filter(x=>x.k!==D.delsh)});
 });
 
@@ -670,7 +715,7 @@ let idleT;
 function idle(){clearTimeout(idleT);idleT=setTimeout(()=>{lock();$('#lockErr').textContent='Locked after 15 minutes of inactivity.'},15*60e3)}
 ['click','keydown'].forEach(ev=>document.addEventListener(ev,()=>{if(loaded)idle()}));
 function lock(){
- clearTimeout(idleT);noteDirty=false;store=fresh();cfg.tok='';loaded=false;
+ clearTimeout(idleT);noteDirty=false;store=fresh();keyCache=new Map();shared=null;cfg.tok='';loaded=false;
  document.body.classList.add('locked');$('#lock').classList.remove('hide');
  ['#fTok','#fPw','#fCfm'].forEach(i=>$(i).value='');
  $('#cfmWrap').classList.add('hide');$('#lockErr').textContent='';
@@ -679,7 +724,7 @@ function lock(){
 $('#lockForm').onsubmit=async e=>{
  e.preventDefault();
  const err=$('#lockErr'),btn=$('#unlockBtn'),pw=$('#fPw').value;
- err.textContent='';
+ err.textContent='';keyCache=new Map();shared=null;
  Object.assign(cfg,REPO);cfg.tok=$('#fTok').value.trim();
  if(!cfg.tok||!pw){err.textContent='Enter your username and password.';return}
  saveCfgLocal();btn.disabled=true;btn.textContent='Unlocking…';
@@ -691,6 +736,10 @@ $('#lockForm').onsubmit=async e=>{
    $('#cfmWrap').classList.remove('hide');$('#fCfm').focus();
    err.textContent=cfmShown&&cfm?'Passwords do not match.':'No saved data found. If this is your first time, confirm your password to create it. It cannot be recovered if you forget it.';
   }else{
+   const pick=['diary','exp','set','cr'].find(k=>store[k].sha);
+   if(pick)shared={salt:store[pick].salt,key:store[pick].key};
+   else{const salt=crypto.getRandomValues(new Uint8Array(16));shared={salt,key:await keyFor(pw,toB64(salt),salt)}}
+   for(const k of ['diary','exp','set','cr'])if(!store[k].sha){store[k].salt=shared.salt;store[k].key=shared.key}
    loaded=true;$('#lock').classList.add('hide');document.body.classList.remove('locked');
    ['#fTok','#fPw','#fCfm'].forEach(i=>$(i).value='');
    show('home');idle();
@@ -710,6 +759,21 @@ $('#cTheme').onchange=e=>{try{localStorage.setItem('nb_theme',e.target.value)}ca
 applyTheme();
 function renderSet(){$('#cCur').value=cfg.cur||'$';$('#cTheme').value=getTheme();renderSetLists()}
 $('#saveCur').onclick=()=>{cfg.cur=$('#cCur').value.trim()||'$';saveCfgLocal();toast('Saved')};
+
+function rollDay(){
+ const n=ymd(new Date());if(n===TODAY)return;
+ const old=TODAY,om=old.slice(0,7),sameMonth=d=>ymd(d).slice(0,7)===om;
+ if(selDay===old)flushNote(); // save any unsaved text to the old day first
+ TODAY=n;bannerOff=false;
+ if(selDay===old)selDay=n;
+ if(expDay===old)expDay=n;
+ if(sameMonth(month))month=firstOfMonth();
+ if(sameMonth(emonth))emonth=firstOfMonth();
+ if(loaded)render();
+}
+setInterval(rollDay,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)rollDay()});
+addEventListener('focus',rollDay);
 
 function render(){
  const v=['home','diary','exp','dash','set'].find(k=>!$('#v-'+k).classList.contains('hide'));
