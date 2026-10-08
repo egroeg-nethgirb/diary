@@ -97,6 +97,17 @@ select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid va
 #note{border:0;border-left:2px solid var(--margin);border-radius:0;padding:0 .5rem 0 1rem;line-height:1.9rem;font-size:1.05rem;background:linear-gradient(transparent calc(1.9rem - 1px),var(--rule) calc(1.9rem - 1px)) 0 0/100% 1.9rem local;min-height:300px}
 #note:focus-visible{outline:none;box-shadow:none}
 td{border-bottom:1px dashed var(--line)}
+.chips{list-style:none;margin:.5rem 0;padding:0;display:flex;flex-wrap:wrap;gap:.4rem}
+.chips li{background:var(--acc2);border:1px solid var(--line);border-radius:999px;padding:.15rem .75rem;display:flex;align-items:center;gap:.2rem;font-size:.92rem}
+.chips li button{background:none;border:0;color:var(--mute);min-width:32px;min-height:32px;margin-right:-.5rem}
+.calcard{max-width:420px;margin:1rem auto 0}
+.cs{width:auto;min-height:30px;padding:.1rem .4rem;font-size:.85rem;color:var(--mute);margin-top:.15rem}
+.banner{display:flex;align-items:center;justify-content:space-between;gap:.5rem;animation:pop .35s ease-out}
+.banner span{cursor:pointer}
+.banner button{background:none;border:0;color:inherit;min-width:36px;min-height:36px}
+@keyframes pop{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.banner{animation:none}}
+#v-diary,#v-exp{max-width:680px}
 @media(max-width:760px){
  body{display:block}
  nav{position:fixed;left:0;right:0;bottom:0;width:auto;z-index:5;flex-direction:row;gap:0;padding:.25rem .25rem calc(.25rem + env(safe-area-inset-bottom));box-shadow:0 -2px 12px #0003}
@@ -127,11 +138,11 @@ body.locked nav,body.locked main{display:none}
 </style>
 </head>
 <body class="locked">
-<div id="lock"><form class="card" id="lockForm" autocomplete="off">
+<div id="lock"><form class="card" id="lockForm">
 <h1>Notebook</h1>
 <p class="mute">Enter your username and password to unlock your notebook.</p>
-<label for="fTok">Username</label><input id="fTok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
-<label for="fPw">Password</label><input id="fPw" type="password" autocomplete="current-password">
+<label for="fTok">Username</label><input id="fTok" name="username" type="text" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" style="-webkit-text-security:disc;text-security:disc">
+<label for="fPw">Password</label><input id="fPw" name="password" type="password" autocomplete="current-password">
 <div id="cfmWrap" class="hide"><label for="fCfm">Confirm password</label><input id="fCfm" type="password" autocomplete="new-password"></div>
 <p id="lockErr" role="alert" style="color:var(--bad)"></p>
 <div class="row"><button class="btn" id="unlockBtn" type="submit">Unlock</button></div>
@@ -141,9 +152,9 @@ body.locked nav,body.locked main{display:none}
   <button data-v="home"><i>🏠</i><span>Home</span></button>
   <button data-v="diary"><i>📖</i><span>Diary</span></button>
   <button data-v="exp"><i>💸</i><span>Expenses</span></button>
+  <button data-v="dash"><i>📊</i><span>Dashboard</span></button>
   <div class="sp"></div>
   <button data-v="set"><i>⚙️</i><span>Settings</span></button>
-  <button id="navLock"><i>🔒</i><span>Lock</span></button>
 </nav>
 <main>
 
@@ -158,39 +169,38 @@ body.locked nav,body.locked main{display:none}
 
 <section id="v-diary" class="hide">
   <h1>Diary</h1>
-  <div id="banner" class="banner hide">You haven’t written your note for today yet!</div>
-  <div class="cols">
-    <div class="card">
-      <div class="calh"><button id="prev" aria-label="Previous month">‹</button><b id="mlabel"></b><button id="next" aria-label="Next month">›</button></div>
-      <div class="grid" id="cal"></div>
-    </div>
-    <div class="card">
-      <h3 id="dlabel"></h3>
-      <textarea id="note" placeholder="What happened today?"></textarea>
-      <div class="row"><button class="btn" id="saveNote">Save note</button><span class="mute" id="noteSt"></span></div>
-    </div>
+  <div id="banner" class="banner hide"><span id="bannerGo">You haven’t written your note for today yet!</span><button id="bannerX" aria-label="Dismiss">✕</button></div>
+  <div class="card">
+    <h3 id="dlabel"></h3>
+    <textarea id="note" placeholder="What happened today?"></textarea>
+    <div class="row"><button class="btn" id="saveNote">Save note</button><span class="mute" id="noteSt"></span></div>
   </div>
+  <div class="card calcard"><div class="calh"><button id="prev" aria-label="Previous month">‹</button><b id="mlabel"></b><button id="next" aria-label="Next month">›</button></div><div class="grid" id="cal"></div></div>
 </section>
 
 <section id="v-exp" class="hide">
   <h1>Expenses</h1>
   <div class="card">
+    <h3 id="elabel"></h3>
     <textarea id="expIn" placeholder="Starbucks coffee 6&#10;Uber to work 12&#10;Electricity bill 85"></textarea>
-    <div class="row">
-      <input type="date" id="expDate" style="width:auto" aria-label="Date">
-      <button class="btn" id="addExp">Add expenses</button>
-      <span class="mute">One per line. Put the amount last.</span>
-    </div>
+    <div class="row"><button class="btn" id="addExp">Add expenses</button><span class="mute">One per line. Put the amount last.</span></div>
   </div>
+  <div class="card" style="margin-top:1rem">
+    <div class="row" style="margin:0 0 .3rem;justify-content:space-between"><h3 style="margin:0">Spent</h3><b id="eTotal"></b></div>
+    <table id="list"></table>
+  </div>
+  <div class="card calcard"><div class="calh"><button id="eprev" aria-label="Previous month">‹</button><b id="emlabel"></b><button id="enext" aria-label="Next month">›</button></div><div class="grid" id="ecal"></div></div>
+</section>
+
+<section id="v-dash" class="hide">
+  <h1>Dashboard</h1>
+  <div class="card calcard" style="margin-top:0"><div class="calh" style="margin:0"><button id="dprev" aria-label="Previous month">‹</button><b id="dmlabel"></b><button id="dnext" aria-label="Next month">›</button></div></div>
   <div class="stats">
     <div><span class="mute">Today</span><b id="sToday"></b></div>
-    <div><span class="mute" id="sDayL">Selected day</span><b id="sDay"></b></div>
-    <div><span class="mute">This month</span><b id="sMonth"></b></div>
+    <div><span class="mute">Month total</span><b id="sMonth"></b></div>
+    <div><span class="mute">Entries</span><b id="sCount"></b></div>
   </div>
-  <div class="cols two">
-    <div class="card"><h3 id="listH"></h3><table id="list"></table></div>
-    <div class="card"><h3 id="pieH"></h3><div class="pie"><i id="pie"></i><ul class="leg" id="leg"></ul></div></div>
-  </div>
+  <div class="card"><h3>By category</h3><div class="pie"><i id="pie"></i><ul class="leg" id="leg"></ul></div></div>
 </section>
 
 <section id="v-set" class="hide">
@@ -199,9 +209,24 @@ body.locked nav,body.locked main{display:none}
     <label for="cTheme">Appearance</label>
     <select id="cTheme"><option value="auto">Match my device</option><option value="light">Light</option><option value="dark">Dark</option></select>
     <label for="cCur">Currency symbol</label><input id="cCur" style="width:6rem" maxlength="3">
-    <div class="row"><button class="btn" id="saveCur">Save</button><button class="btn ghost" id="lockBtn">Lock now</button></div>
-    <p class="mute">The app locks itself after 15 minutes without activity. Your token and password are never saved in this browser.</p>
+    <div class="row"><button class="btn" id="saveCur">Save</button></div>
   </div>
+  <div class="card set" style="margin-top:1rem">
+    <h3>Expense categories</h3>
+    <p class="mute">Lines that match no keyword go to “Other”. Add your own categories and keywords instead. These sync across your devices.</p>
+    <ul class="chips" id="catList"></ul>
+    <div class="row"><input id="catIcon" placeholder="🏷️" maxlength="4" style="width:4.5rem"><input id="catName" placeholder="New category, e.g. Pets" style="flex:1;width:auto;min-width:10rem"><button class="btn" id="addCat">Add</button></div>
+    <h3 style="margin-top:1.2rem">Keywords</h3>
+    <ul class="chips" id="kwList"></ul>
+    <div class="row"><input id="kwWord" placeholder="Word, e.g. dmart" style="flex:1;width:auto;min-width:9rem"><select id="kwCat"></select><button class="btn" id="addKw">Add</button></div>
+  </div>
+  <div class="card set" style="margin-top:1rem">
+    <h3>Short forms</h3>
+    <p class="mute">Type the short form, get the full text. With “sb” saved as “Starbucks coffee”, typing “sb 6” works like “Starbucks coffee 6”.</p>
+    <ul class="chips" id="shList"></ul>
+    <div class="row"><input id="shKey" placeholder="Short, e.g. sb" style="width:7rem" autocapitalize="off"><input id="shText" placeholder="Full text" style="flex:1;width:auto;min-width:9rem"><select id="shCat"></select><button class="btn" id="addSh">Add</button></div>
+  </div>
+  <p class="mute" style="margin-top:1rem">Your token and password are never saved in this browser. The app logs out after 15 minutes of inactivity.</p>
 </section>
 
 </main>
@@ -224,18 +249,29 @@ const CATS={
  'Health':{icon:'💊',color:'#c9473d',words:['doctor','pharmacy','medicine','gym','hospital','dentist','clinic','vitamin']},
  'Other':{icon:'📦',color:'#8795a8',words:[]}
 };
+const PALETTE=['#6b8e23','#b5651d','#4682b4','#a0522d','#008b8b','#9370db','#cd5c5c','#708090'];
+const SD=()=>store.set.data;
+function allCats(){
+ const o={...CATS};
+ (SD().custom||[]).forEach((c,i)=>{o[c.name]={icon:c.icon||'🏷️',color:PALETTE[i%PALETTE.length],words:[]}});
+ return o;
+}
+const catInfo=n=>allCats()[n]||{icon:'📦',color:'#8795a8'};
+const rx=w=>new RegExp('\\b'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
 function categorize(t){
- t=' '+t.toLowerCase()+' ';
- for(const [name,c] of Object.entries(CATS))
-  for(const w of c.words) if(new RegExp('\\b'+w+'\\b').test(t)) return name;
+ const ac=allCats(),uw=SD().words||{};
+ for(const [n,ws] of Object.entries(uw)) if(ac[n]) for(const w of ws) if(rx(w).test(t)) return n;
+ for(const [n,c] of Object.entries(ac)) for(const w of c.words) if(rx(w).test(t)) return n;
  return 'Other';
 }
 function parseLine(line){
  const m=line.match(/(-?\d+(?:[.,]\d+)?)(?!.*\d)/);
  if(!m) return null;
  const amount=parseFloat(m[1].replace(',','.'));
- const text=(line.slice(0,m.index)+line.slice(m.index+m[0].length)).replace(/[$₹€£]/g,'').trim()||'Expense';
- return {text,amount,cat:categorize(text)};
+ let text=(line.slice(0,m.index)+line.slice(m.index+m[0].length)).replace(/[$₹€£]/g,'').trim()||'Expense';
+ let forced=null;const shorts=SD().shorts||[];
+ text=text.split(/\s+/).map(w=>{const x=shorts.find(q=>q.k===w.toLowerCase());if(x){if(x.cat&&x.cat!=='auto')forced=x.cat;return x.text}return w}).join(' ');
+ return {text,amount,cat:forced&&allCats()[forced]?forced:categorize(text)};
 }
 
 /* ---------- config + encrypted GitHub storage ---------- */
@@ -244,8 +280,8 @@ let cfg=JSON.parse(localStorage.getItem('nb_cfg')||'{}'); delete cfg.tok; Object
 const saveCfgLocal=()=>{try{const {tok,...rest}=cfg;localStorage.setItem('nb_cfg',JSON.stringify(rest))}catch(e){}};
 const cur=()=>cfg.cur||'$';
 const money=n=>cur()+(Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
-const FILES={diary:'data/diary.enc.json',exp:'data/expenses.enc.json'};
-const fresh=()=>({diary:{data:{},sha:null,salt:null,key:null},exp:{data:[],sha:null,salt:null,key:null}});
+const FILES={diary:'data/diary.enc.json',exp:'data/expenses.enc.json',set:'data/settings.enc.json'};
+const fresh=()=>({diary:{data:{},sha:null,salt:null,key:null},exp:{data:[],sha:null,salt:null,key:null},set:{data:{custom:[],words:{},shorts:[]},sha:null,salt:null,key:null}});
 let store=fresh();
 let loaded=false;
 
@@ -284,12 +320,15 @@ async function pull(key,pw){
  }catch(e){throw new Error('WRONG_PW')}
  return true;
 }
-async function push(key,msg){
+let _q=Promise.resolve();
+const enqueue=fn=>{const p=_q.then(fn);_q=p.catch(()=>{});return p};
+function push(key,msg){return enqueue(()=>pushNow(key,msg))}
+async function pushNow(key,msg){
  if(!ready()||!loaded) throw new Error('Locked. Log in again.');
  const st=store[key];
  const body={message:msg,content:b64enc(await encryptObj(st)),branch:cfg.branch||'main'};
  if(st.sha) body.sha=st.sha;
- const r=await gh(FILES[key],{method:'PUT',body:JSON.stringify(body)});
+ const r=await gh(FILES[key],{method:'PUT',body:JSON.stringify(body),keepalive:true});
  if(r.status===409||r.status===422) throw new Error('The file changed elsewhere. Lock, log in again to load the latest, then retry.');
  if(r.status===404) throw new Error('Repo not found. Check the name and that the token can access it.');
  if(!r.ok) throw new Error(r.status===401||r.status===403?'Token rejected. It needs Contents: read and write on this repo.':'GitHub error '+r.status);
@@ -299,93 +338,157 @@ async function push(key,msg){
 /* ---------- ui helpers ---------- */
 let tt;
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(tt);tt=setTimeout(()=>t.className='',3500)}
-function show(v){
- ['home','diary','exp','set'].forEach(k=>$('#v-'+k).classList.toggle('hide',k!==v));
+function show(v){flushNote();
+ ['home','diary','exp','dash','set'].forEach(k=>$('#v-'+k).classList.toggle('hide',k!==v));
  $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
  render();
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b)show(b.dataset.v)});
 
-/* ---------- diary ---------- */
-let selDay=TODAY, month=new Date(); month.setDate(1);
+/* ---------- calendars ---------- */
+function drawCal(grid,label,md,sel,has){
+ label.textContent=md.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+ const y=md.getFullYear(),m=md.getMonth(),first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+ let h=['S','M','T','W','T','F','S'].map(x=>`<span class="dow">${x}</span>`).join('')+'<span></span>'.repeat(first);
+ for(let i=1;i<=days;i++){const k=`${y}-${pad(m+1)}-${pad(i)}`;h+=`<button type="button" data-d="${k}" class="${k===TODAY?'today ':''}${k===sel?'sel ':''}${has(k)?'has':''}">${i}</button>`}
+ grid.innerHTML=h;
+}
+const firstOfMonth=()=>{const d=new Date();d.setDate(1);return d};
+const shiftMonth=(d,n)=>d.setMonth(d.getMonth()+n);
+const prettyDay=k=>new Date(k+'T00:00').toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const toView=el=>{if(innerWidth<=760)el.scrollIntoView({behavior:'smooth',block:'start'})};
+
+/* ---------- diary (auto-saves) ---------- */
+let selDay=TODAY,month=firstOfMonth(),noteDirty=false,noteTimer,bannerOff=false;
 function renderDiary(){
  const d=store.diary.data;
- $('#banner').classList.toggle('hide',!!(d[TODAY]&&d[TODAY].trim())||!loaded&&ready()===false&&false);
- $('#mlabel').textContent=month.toLocaleDateString(undefined,{month:'long',year:'numeric'});
- const y=month.getFullYear(),m=month.getMonth(),first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
- let h=['S','M','T','W','T','F','S'].map(x=>`<span class="dow">${x}</span>`).join('')+'<span></span>'.repeat(first);
- for(let i=1;i<=days;i++){
-  const k=`${y}-${pad(m+1)}-${pad(i)}`;
-  h+=`<button data-d="${k}" class="${k===TODAY?'today ':''}${k===selDay?'sel ':''}${d[k]&&d[k].trim()?'has':''}">${i}</button>`;
- }
- $('#cal').innerHTML=h;
- $('#dlabel').textContent=new Date(selDay+'T00:00').toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
- $('#note').value=d[selDay]||'';
- $('#noteSt').textContent='';
+ $('#banner').classList.toggle('hide',bannerOff||!!(d[TODAY]&&d[TODAY].trim()));
+ drawCal($('#cal'),$('#mlabel'),month,selDay,k=>!!(d[k]&&d[k].trim()));
+ $('#dlabel').textContent=prettyDay(selDay);
+ if(!noteDirty){$('#note').value=d[selDay]||'';$('#noteSt').textContent=''}
 }
-$('#cal').onclick=e=>{const b=e.target.closest('[data-d]');if(b){selDay=b.dataset.d;renderDiary();if(innerWidth<=760)$('#dlabel').scrollIntoView({behavior:'smooth',block:'start'})}};
-$('#prev').onclick=()=>{month.setMonth(month.getMonth()-1);renderDiary()};
-$('#next').onclick=()=>{month.setMonth(month.getMonth()+1);renderDiary()};
-$('#saveNote').onclick=async()=>{
- const btn=$('#saveNote');btn.disabled=true;$('#noteSt').textContent='Saving…';
- const txt=$('#note').value, old=store.diary.data[selDay];
- if(txt.trim()) store.diary.data[selDay]=txt; else delete store.diary.data[selDay];
- try{await push('diary','Diary '+selDay);toast('Saved');renderDiary()}
- catch(e){if(old===undefined)delete store.diary.data[selDay];else store.diary.data[selDay]=old;toast(e.message,1);$('#noteSt').textContent=''}
- btn.disabled=false;
-};
+async function saveNote(day,text){
+ clearTimeout(noteTimer);
+ const d=store.diary.data;
+ if(text.trim())d[day]=text;else delete d[day];
+ $('#noteSt').textContent='Saving…';
+ try{await push('diary','Diary '+day);if(day===selDay&&$('#note').value===text){noteDirty=false;$('#noteSt').textContent='Saved ✓'}renderDiary()}
+ catch(e){if(day===selDay)noteDirty=true;$('#noteSt').textContent='Not saved yet';toast(e.message,1)}
+}
+function flushNote(){if(noteDirty&&loaded){noteDirty=false;saveNote(selDay,$('#note').value)}}
+$('#note').oninput=()=>{noteDirty=true;$('#noteSt').textContent='Typing…';clearTimeout(noteTimer);noteTimer=setTimeout(flushNote,1500)};
+$('#saveNote').onclick=()=>{noteDirty=false;saveNote(selDay,$('#note').value)};
+$('#cal').onclick=e=>{const b=e.target.closest('[data-d]');if(b){flushNote();selDay=b.dataset.d;renderDiary();toView($('#dlabel'))}};
+$('#prev').onclick=()=>{shiftMonth(month,-1);renderDiary()};
+$('#next').onclick=()=>{shiftMonth(month,1);renderDiary()};
+$('#bannerX').onclick=()=>{bannerOff=true;renderDiary()};
+$('#bannerGo').onclick=()=>{flushNote();selDay=TODAY;month=firstOfMonth();renderDiary();$('#note').focus()};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flushNote()});
+addEventListener('pagehide',flushNote);
 
 /* ---------- expenses ---------- */
+let expDay=TODAY,emonth=firstOfMonth();
+const sumA=a=>a.reduce((t,x)=>t+x.amount,0);
 function renderExp(){
- const all=store.exp.data, day=$('#expDate').value||TODAY, mo=day.slice(0,7);
- const sum=a=>a.reduce((s,x)=>s+x.amount,0);
- const dayItems=all.filter(x=>x.date===day), monthItems=all.filter(x=>x.date.slice(0,7)===mo);
- $('#sToday').textContent=money(sum(all.filter(x=>x.date===TODAY)));
- $('#sDayL').textContent='Selected day';
- $('#sDay').textContent=money(sum(dayItems));
- $('#sMonth').textContent=money(sum(all.filter(x=>x.date.slice(0,7)===TODAY.slice(0,7))));
- $('#listH').textContent='Spent on '+day;
- $('#list').innerHTML=dayItems.length?dayItems.map(x=>`<tr><td>${CATS[x.cat].icon} ${esc(x.text)}<br><span class="mute">${esc(x.cat)}</span></td><td class="n">${money(x.amount)}</td><td><button data-del="${x.id}" aria-label="Delete">✕</button></td></tr>`).join(''):'<tr><td class="mute">Nothing logged for this day.</td></tr>';
- $('#pieH').textContent='By category, '+new Date(mo+'-01T00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'});
- const tot=sum(monthItems), by={};
- monthItems.forEach(x=>by[x.cat]=(by[x.cat]||0)+x.amount);
- const ent=Object.entries(by).sort((a,b)=>b[1]-a[1]);
- let acc=0;const stops=ent.map(([c,v])=>{const s=acc/tot*100;acc+=v;return `${CATS[c].color} ${s}% ${acc/tot*100}%`});
- $('#pie').style.background=ent.length?`conic-gradient(${stops.join(',')})`:'var(--line)';
- $('#leg').innerHTML=ent.length?ent.map(([c,v])=>`<li><s style="background:${CATS[c].color}"></s>${CATS[c].icon} ${esc(c)}: ${money(v)} <span class="mute">(${Math.round(v/tot*100)}%)</span></li>`).join(''):'<li class="mute">No data for this month.</li>';
+ const all=store.exp.data,items=all.filter(x=>x.date===expDay),ac=allCats(),days=new Set(all.map(x=>x.date));
+ drawCal($('#ecal'),$('#emlabel'),emonth,expDay,k=>days.has(k));
+ $('#elabel').textContent=prettyDay(expDay);
+ $('#eTotal').textContent=items.length?money(sumA(items)):'';
+ const opts=Object.keys(ac).map(n=>`<option>${esc(n)}</option>`).join('');
+ $('#list').innerHTML=items.length?items.map(x=>{
+  const o=ac[x.cat]?opts.replace(`<option>${esc(x.cat)}</option>`,`<option selected>${esc(x.cat)}</option>`):`<option selected>${esc(x.cat)}</option>`+opts;
+  return `<tr><td>${catInfo(x.cat).icon} ${esc(x.text)}<br><select class="cs" data-cat="${x.id}" aria-label="Category">${o}</select></td><td class="n">${money(x.amount)}</td><td><button data-del="${x.id}" aria-label="Delete">✕</button></td></tr>`}).join(''):'<tr><td class="mute">Nothing logged for this day.</td></tr>';
 }
-$('#expDate').onchange=renderExp;
+$('#ecal').onclick=e=>{const b=e.target.closest('[data-d]');if(b){expDay=b.dataset.d;renderExp();toView($('#elabel'))}};
+$('#eprev').onclick=()=>{shiftMonth(emonth,-1);renderExp()};
+$('#enext').onclick=()=>{shiftMonth(emonth,1);renderExp()};
 $('#addExp').onclick=async()=>{
- const date=$('#expDate').value||TODAY, lines=$('#expIn').value.split('\n').map(s=>s.trim()).filter(Boolean);
- const items=[],bad=[];
- lines.forEach(l=>{const p=parseLine(l);p?items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),date,...p}):bad.push(l)});
+ const lines=$('#expIn').value.split('\n').map(x=>x.trim()).filter(Boolean),items=[],bad=[];
+ lines.forEach(l=>{const p=parseLine(l);p?items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:expDay,...p}):bad.push(l)});
  if(!items.length){toast('Add an amount at the end of each line, like “Lunch 8”.',1);return}
- const before=store.exp.data.slice();
- store.exp.data=before.concat(items);
+ const before=store.exp.data.slice();store.exp.data=before.concat(items);
  const btn=$('#addExp');btn.disabled=true;
- try{await push('exp','Expenses '+date);$('#expIn').value=bad.join('\n');toast(`Added ${items.length}`+(bad.length?`, ${bad.length} line(s) had no amount`:''))}
+ try{await push('exp','Expenses '+expDay);$('#expIn').value=bad.join('\n');const o=items.filter(x=>x.cat==='Other').length;
+  toast(o?`Added ${items.length}. ${o} went to Other: change it in the list, or add keywords in Settings.`:`Added ${items.length}`+(bad.length?`, ${bad.length} line(s) had no amount`:''))}
  catch(e){store.exp.data=before;toast(e.message,1)}
  btn.disabled=false;renderExp();
 };
 $('#list').onclick=async e=>{
  const b=e.target.closest('[data-del]');if(!b)return;
- const before=store.exp.data.slice();
- store.exp.data=before.filter(x=>x.id!==b.dataset.del);
+ const before=store.exp.data.slice();store.exp.data=before.filter(x=>x.id!==b.dataset.del);
  try{await push('exp','Delete expense')}catch(err){store.exp.data=before;toast(err.message,1)}
  renderExp();
 };
+$('#list').onchange=async e=>{
+ const sel=e.target.closest('[data-cat]');if(!sel)return;
+ const it=store.exp.data.find(x=>x.id===sel.dataset.cat);if(!it)return;
+ const old=it.cat;it.cat=sel.value;
+ try{await push('exp','Change category')}catch(err){it.cat=old;toast(err.message,1)}
+ renderExp();
+};
+
+/* ---------- dashboard ---------- */
+let dmonth=firstOfMonth();
+function renderDash(){
+ const all=store.exp.data,mo=ymd(dmonth).slice(0,7),mi=all.filter(x=>x.date.slice(0,7)===mo);
+ $('#dmlabel').textContent=dmonth.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+ $('#sToday').textContent=money(sumA(all.filter(x=>x.date===TODAY)));
+ $('#sMonth').textContent=money(sumA(mi));$('#sCount').textContent=mi.length;
+ const tot=sumA(mi),by={};mi.forEach(x=>by[x.cat]=(by[x.cat]||0)+x.amount);
+ const ent=Object.entries(by).sort((p,q)=>q[1]-p[1]);
+ let acc=0;const stops=ent.map(([c,v])=>{const st=acc/tot*100;acc+=v;return `${catInfo(c).color} ${st}% ${acc/tot*100}%`});
+ $('#pie').style.background=ent.length?`conic-gradient(${stops.join(',')})`:'var(--line)';
+ $('#leg').innerHTML=ent.length?ent.map(([c,v])=>`<li><s style="background:${catInfo(c).color}"></s>${catInfo(c).icon} ${esc(c)}: ${money(v)} <span class="mute">(${Math.round(v/tot*100)}%)</span></li>`).join(''):'<li class="mute">No data for this month.</li>';
+}
+$('#dprev').onclick=()=>{shiftMonth(dmonth,-1);renderDash()};
+$('#dnext').onclick=()=>{shiftMonth(dmonth,1);renderDash()};
+
+/* ---------- settings: categories, keywords, short forms ---------- */
+function renderSetLists(){
+ const ac=allCats(),sd=SD(),names=Object.keys(ac),custom=sd.custom||[];
+ const opts=names.map(n=>`<option>${esc(n)}</option>`).join('');
+ $('#kwCat').innerHTML=opts;$('#shCat').innerHTML='<option value="auto">Auto</option>'+opts;
+ $('#catList').innerHTML=names.map(n=>`<li>${ac[n].icon} ${esc(n)}${custom.some(c=>c.name===n)?`<button data-delcat="${esc(n)}" aria-label="Remove ${esc(n)}">✕</button>`:''}</li>`).join('');
+ $('#kwList').innerHTML=Object.entries(sd.words||{}).flatMap(([c,ws])=>ws.map(w=>`<li>${esc(w)} → ${esc(c)}<button data-delkw="${esc(c)}|${esc(w)}" aria-label="Remove">✕</button></li>`)).join('')||'<li class="mute">None yet</li>';
+ $('#shList').innerHTML=(sd.shorts||[]).map(x=>`<li><b>${esc(x.k)}</b>&nbsp;→ ${esc(x.text)}${x.cat&&x.cat!=='auto'?' ('+esc(x.cat)+')':''}<button data-delsh="${esc(x.k)}" aria-label="Remove">✕</button></li>`).join('')||'<li class="mute">None yet</li>';
+}
+async function saveSet(fn){
+ const snap=JSON.stringify(SD());fn();renderSetLists();
+ try{await push('set','Settings');toast('Saved')}catch(e){store.set.data=JSON.parse(snap);toast(e.message,1);renderSetLists()}
+}
+$('#addCat').onclick=()=>{
+ const n=$('#catName').value.trim();
+ if(!n||allCats()[n]){toast(n?'That category already exists.':'Type a category name.',1);return}
+ const ic=$('#catIcon').value.trim()||'🏷️';
+ saveSet(()=>{(SD().custom=SD().custom||[]).push({name:n,icon:ic})});$('#catName').value='';$('#catIcon').value='';
+};
+$('#addKw').onclick=()=>{
+ const w=$('#kwWord').value.trim().toLowerCase(),c=$('#kwCat').value;if(!w)return;
+ saveSet(()=>{const W=SD().words=SD().words||{};W[c]=W[c]||[];if(!W[c].includes(w))W[c].push(w)});$('#kwWord').value='';
+};
+$('#addSh').onclick=()=>{
+ const k=$('#shKey').value.trim().toLowerCase(),t=$('#shText').value.trim();
+ if(!k||!t||/\s/.test(k)){toast('The short form must be one word, with its full text.',1);return}
+ saveSet(()=>{const L=(SD().shorts||[]).filter(x=>x.k!==k);L.push({k,text:t,cat:$('#shCat').value});SD().shorts=L});$('#shKey').value='';$('#shText').value='';
+};
+$('#v-set').addEventListener('click',e=>{
+ const b=e.target.closest('button'),D=b&&b.dataset;if(!D)return;
+ if(D.delcat)saveSet(()=>{SD().custom=SD().custom.filter(c=>c.name!==D.delcat);if(SD().words)delete SD().words[D.delcat]});
+ else if(D.delkw){const [c,w]=D.delkw.split('|');saveSet(()=>{SD().words[c]=SD().words[c].filter(x=>x!==w)})}
+ else if(D.delsh)saveSet(()=>{SD().shorts=SD().shorts.filter(x=>x.k!==D.delsh)});
+});
 
 /* ---------- login, lock, settings ---------- */
 let idleT;
 function idle(){clearTimeout(idleT);idleT=setTimeout(()=>{lock();$('#lockErr').textContent='Locked after 15 minutes of inactivity.'},15*60e3)}
 ['click','keydown'].forEach(ev=>document.addEventListener(ev,()=>{if(loaded)idle()}));
 function lock(){
- clearTimeout(idleT);store=fresh();cfg.tok='';loaded=false;
+ clearTimeout(idleT);noteDirty=false;store=fresh();cfg.tok='';loaded=false;
  document.body.classList.add('locked');$('#lock').classList.remove('hide');
  ['#fTok','#fPw','#fCfm'].forEach(i=>$(i).value='');
  $('#cfmWrap').classList.add('hide');$('#lockErr').textContent='';
 }
-$('#navLock').onclick=lock;$('#lockBtn').onclick=lock;
+
 $('#lockForm').onsubmit=async e=>{
  e.preventDefault();
  const err=$('#lockErr'),btn=$('#unlockBtn'),pw=$('#fPw').value;
@@ -395,7 +498,7 @@ $('#lockForm').onsubmit=async e=>{
  saveCfgLocal();btn.disabled=true;btn.textContent='Unlocking…';
  try{
   store=fresh();
-  const ex=await Promise.all([pull('diary',pw),pull('exp',pw)]);
+  const ex=await Promise.all([pull('diary',pw),pull('exp',pw),pull('set',pw)]);
   const cfm=$('#fCfm').value, cfmShown=!$('#cfmWrap').classList.contains('hide');
   if(!ex[0]&&!ex[1]&&cfm!==pw){
    $('#cfmWrap').classList.remove('hide');$('#fCfm').focus();
@@ -418,16 +521,17 @@ function applyTheme(){
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
 $('#cTheme').onchange=e=>{try{localStorage.setItem('nb_theme',e.target.value)}catch(x){}applyTheme()};
 applyTheme();
-function renderSet(){$('#cCur').value=cfg.cur||'$';$('#cTheme').value=getTheme()}
+function renderSet(){$('#cCur').value=cfg.cur||'$';$('#cTheme').value=getTheme();renderSetLists()}
 $('#saveCur').onclick=()=>{cfg.cur=$('#cCur').value.trim()||'$';saveCfgLocal();toast('Saved')};
 
 function render(){
- const v=['home','diary','exp','set'].find(k=>!$('#v-'+k).classList.contains('hide'));
+ const v=['home','diary','exp','dash','set'].find(k=>!$('#v-'+k).classList.contains('hide'));
  if(v==='diary')renderDiary();
  if(v==='exp')renderExp();
+ if(v==='dash')renderDash();
  if(v==='set')renderSet();
 }
-$('#expDate').value=TODAY;
+
 </script>
 </body>
 </html>
