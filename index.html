@@ -668,13 +668,19 @@ function splitDays(text,order){
 }
 function impAnalyze(){
  const type=$('#impType').value,{days,orphan}=splitDays($('#impText').value,$('#impOrder').value);
- const r={type,days,orphan,items:[],crs:[],bad:[],notes:{}};let n=0;
+ const r={type,days,orphan,items:[],crs:[],bad:[],notes:{},unk:{}};let n=0;
  const nid=()=>Date.now().toString(36)+(n++).toString(36)+Math.random().toString(36).slice(2,5);
  days.forEach(dy=>{
   if(type==='diary'){const t=dy.raw.join('\n').trim();if(t)r.notes[dy.date]=(r.notes[dy.date]?r.notes[dy.date]+'\n\n':'')+t;return}
   dy.lines.forEach(l=>{
+   if(/^nil$/i.test(l))return; // "nil" = nothing that day
+   let forced=null;const tm=l.match(/\s@([^@]+)$/);
+   if(tm&&!CRRX.test(l)){forced=tm[1].trim();l=l.slice(0,tm.index).trim()}
    if(CRRX.test(l)){const c=parseCreditLine(l);c?r.crs.push({id:nid(),date:dy.date,raw:l,...c}):r.bad.push(dy.date+': '+l);return}
-   const p=parseLine(l);p?r.items.push({id:nid(),date:dy.date,raw:l,...p}):r.bad.push(dy.date+': '+l);
+   const p=parseLine(l);
+   if(!p){r.bad.push(dy.date+': '+l);return}
+   if(forced){if(allCats()[forced])p.cat=forced;else r.unk[forced]=(r.unk[forced]||0)+1}
+   r.items.push({id:nid(),date:dy.date,raw:l,...p});
   });
  });
  return r;
@@ -685,6 +691,7 @@ function impSummary(r){
  let t=r.type==='diary'?`${Object.keys(r.notes).length} diary day(s), ${span}.`
   :`${r.items.length} expense(s) totalling ${money(sumA(r.items))} and ${r.crs.length} credit(s) totalling ${money(sumA(r.crs))}, over ${r.days.length} day(s), ${span}.`;
  if(r.orphan)t+=` ${r.orphan} line(s) before the first date will be ignored.`;
+ const uk=Object.keys(r.unk||{});if(uk.length)t+=` Category not found, so auto-sorted instead (add it in Settings first): ${uk.map(k=>k+' ×'+r.unk[k]).join(', ')}.`;
  if(r.bad.length)t+=` ${r.bad.length} line(s) have no amount and will be skipped: `+r.bad.slice(0,5).join(' | ')+(r.bad.length>5?' …':'');
  return t;
 }
