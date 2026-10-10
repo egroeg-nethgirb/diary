@@ -112,8 +112,7 @@ td{border-bottom:1px dashed var(--line)}
 .sech h3{margin:0}
 .pen{background:none;border:1px solid var(--line);border-radius:8px;width:44px;height:44px;padding:0}
 .pen:hover{background:var(--acc2)}
-.homeh{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
-.themebtn{width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:var(--panel);font-size:1.2rem;padding:0;flex-shrink:0}
+.themebtn{position:absolute;top:2rem;right:2rem;z-index:2;width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:var(--panel);font-size:1.2rem;padding:0;box-shadow:0 1px 2px #0000001f}
 .themebtn:hover{background:var(--acc2)}
 .calcard{max-width:420px;margin:1rem auto 0}
 .cs{width:auto;min-height:30px;padding:.1rem .4rem;font-size:.85rem;color:var(--mute);margin-top:.15rem}
@@ -129,14 +128,35 @@ td{border-bottom:1px dashed var(--line)}
 #v-dash .card{margin-top:1rem}
 #v-dash h1+.card{margin-top:0}
 td.pen{width:44px}
+/* notebook look across all tabs */
+body{background-image:repeating-linear-gradient(0deg,#00000008 0 1px,transparent 1px 4px)}
+main{position:relative}
+h1{font-family:var(--hand);font-size:2.8rem;line-height:1.1;margin-bottom:.8rem;padding-right:3.5rem}
+.card h3{font-family:var(--hand);font-size:1.6rem;font-weight:600}
+main .card{box-shadow:0 1px 2px #0000001f,0 4px 0 -2px var(--panel),0 5px 0 -2px var(--line),0 8px 0 -4px var(--panel),0 9px 0 -4px var(--line)}
+.stats div{box-shadow:0 2px 6px -2px #0000004d}
+.stats div:nth-child(1){background:var(--warn);transform:rotate(-1.2deg)}
+.stats div:nth-child(2){background:var(--acc2);transform:rotate(1.2deg)}
+.grid button{font-family:var(--hand);font-size:1.2rem;border-radius:50%}
+.calh .ml,#dlab{font-family:var(--hand);font-size:1.5rem}
+#list,#brk{background:linear-gradient(90deg,transparent .55rem,var(--margin) .55rem,var(--margin) calc(.55rem + 2px),transparent calc(.55rem + 2px))}
+#list td,#brk td{border-bottom:1px solid var(--rule);height:2.4rem}
+#list td:first-child,#brk td:first-child{padding-left:1.3rem}
+#expIn{border:0;border-left:2px solid var(--margin);border-radius:0;padding:0 .5rem 0 1rem;line-height:1.9rem;background:linear-gradient(transparent calc(1.9rem - 1px),var(--rule) calc(1.9rem - 1px)) 0 0/100% 1.9rem local}
+#expIn:focus-visible{outline:none}
+nav{padding-right:0}
+nav button{border-radius:10px 0 0 10px}
+nav button.on{background:var(--bg);color:var(--ink)}
 @media(max-width:760px){
  body{display:block}
  nav{position:fixed;left:0;right:0;bottom:0;width:auto;z-index:5;flex-direction:row;gap:0;padding:.25rem .25rem calc(.25rem + env(safe-area-inset-bottom));box-shadow:0 -2px 12px #0003}
  nav .brand,nav .sp{display:none}
  nav button{flex:1;flex-direction:column;justify-content:center;align-items:center;text-align:center;font-size:.72rem;padding:.35rem .1rem;min-height:54px;border-radius:10px}
  nav button i{margin:0 0 2px;font-size:1.3rem}
+ nav button.on{background:var(--acc);color:var(--on)}
  main{padding:1rem 1rem calc(86px + env(safe-area-inset-bottom));max-width:none}
- h1{font-size:1.6rem}
+ h1{font-size:2.3rem}
+ .themebtn{top:1rem;right:1rem}
  .home,.cols,.cols.two{grid-template-columns:1fr}
  .big{padding:1.6rem 1.25rem}
  .card{padding:1rem}
@@ -151,26 +171,45 @@ td.pen{width:44px}
  #toast{left:1rem;right:1rem;bottom:calc(80px + env(safe-area-inset-bottom));text-align:center}
  #lock{align-items:flex-start;padding:1.5rem 1rem calc(1rem + env(safe-area-inset-bottom))}
 }
-#lock{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:10;overflow:auto}
-#lock form{width:100%;max-width:420px}
-#lock label{display:block;margin:.8rem 0 .2rem;font-weight:500}
+#lock{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:1rem;z-index:10;overflow:auto;
+ background:
+  repeating-linear-gradient(45deg,#ffffff06 0 2px,transparent 2px 6px),
+  radial-gradient(1100px 600px at 50% -10%,#5d4a3b 0,#3b2f2a 55%,#221a16 100%)}
+#lock .cover{position:relative;width:100%;max-width:400px;padding:1.5rem 1.5rem 1.5rem 2.6rem;border-radius:6px 16px 16px 6px;
+ background:linear-gradient(135deg,#3a6a61,#264842);color:#f3ead8;
+ box-shadow:0 24px 48px -14px #000b,0 2px 0 #ffffff1a inset,0 0 0 1px #00000040;animation:rise .5s ease-out}
+#lock .cover::before{content:"";position:absolute;left:0;top:0;bottom:0;width:22px;border-radius:6px 0 0 6px;
+ background:linear-gradient(90deg,#16302b,#2a524b);box-shadow:inset -4px 0 6px #0007}
+#lock .cover::after{content:"";position:absolute;inset:10px 10px 10px 32px;border:1.5px dashed #e8d9b84d;border-radius:5px;pointer-events:none}
+#lock .plate{position:relative;text-align:center;background:#f6efdd;color:#2f2a26;border:1px solid #d8c9a6;border-radius:4px;padding:.6rem 1rem .7rem;margin-bottom:1rem;box-shadow:0 2px 4px #0006}
+#lock .plate .ico{font-size:1.6rem;line-height:1}
+#lock .plate h1{font-family:var(--hand);font-size:2.6rem;line-height:1.1;margin:.1rem 0 0;font-weight:600}
+#lock .plate p{margin:.1rem 0 0;color:#85796a;font-size:.88rem}
+#lock .hint{margin:0 0 .4rem;color:#cfe0da;font-size:.9rem}
+#lock label{display:block;margin:.8rem 0 .2rem;font-weight:500;color:#f3ead8}
+#lock input{background:#fffdf7;color:#2f2a26;border:1px solid #00000030}
+#lock input:focus-visible,#lock .btn:focus-visible{outline:2px solid #e0b84a;outline-offset:2px}
+#lock .btn{width:100%;background:#e0b84a;color:#2b2113;font-weight:600;letter-spacing:.02em}
+#lock .btn:disabled{opacity:.7}
+#lockErr{color:#ffd2cc;margin:.6rem 0 0;min-height:1.2em}
+@keyframes rise{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){#lock .cover{animation:none}}
 body.locked nav,body.locked main{display:none}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body class="locked">
-<div id="lock"><form class="card" id="lockForm">
-<h1>Notebook</h1>
-<p class="mute">Enter your username and password to unlock your notebook.</p>
+<div id="lock"><form class="cover" id="lockForm">
+<div class="plate"><div class="ico">📓</div><h1>Notebook</h1><p>Your private diary &amp; expenses</p></div>
+<p class="hint">Enter your username and password to unlock.</p>
 <label for="fTok">Username</label><input id="fTok" name="username" type="text" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" style="-webkit-text-security:disc;text-security:disc">
 <label for="fPw">Password</label><input id="fPw" name="password" type="password" autocomplete="current-password">
 <div id="cfmWrap" class="hide"><label for="fCfm">Confirm password</label><input id="fCfm" type="password" autocomplete="new-password"></div>
-<p id="lockErr" role="alert" style="color:var(--bad)"></p>
+<p id="lockErr" role="alert"></p>
 <div class="row"><button class="btn" id="unlockBtn" type="submit">Unlock</button></div>
 </form></div>
 <nav>
   <div class="brand">Notebook</div>
-  <button data-v="home"><i>🏠</i><span>Home</span></button>
   <button data-v="diary"><i>📖</i><span>Diary</span></button>
   <button data-v="exp"><i>💸</i><span>Expenses</span></button>
   <button data-v="dash"><i>📊</i><span>Dashboard</span></button>
@@ -179,19 +218,7 @@ body.locked nav,body.locked main{display:none}
 </nav>
 <main>
 
-<section id="v-home">
-  <div class="homeh">
-    <div>
-      <h1>Your notebook</h1>
-      <p class="mute">Write about your day, or jot down what you spent.</p>
-    </div>
-    <button class="themebtn" id="themeBtn" type="button" aria-label="Switch between dark and light mode"></button>
-  </div>
-  <div class="home">
-    <button class="big" data-v="diary"><b>Go to Diary</b><span>Write about your day</span></button>
-    <button class="big" data-v="exp"><b>Go to Expenses</b><span>Type it like a text message</span></button>
-  </div>
-</section>
+<button class="themebtn" id="themeBtn" type="button" aria-label="Switch between dark and light mode"></button>
 
 <section id="v-diary" class="hide">
   <h1>Diary</h1>
@@ -416,7 +443,7 @@ async function pushNow(key,msg){
 let tt;
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(tt);tt=setTimeout(()=>t.className='',3500)}
 function show(v){flushNote();
- ['home','diary','exp','dash','set'].forEach(k=>$('#v-'+k).classList.toggle('hide',k!==v));
+ ['diary','exp','dash','set'].forEach(k=>$('#v-'+k).classList.toggle('hide',k!==v));
  $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
  render();
 }
@@ -783,7 +810,7 @@ $('#lockForm').onsubmit=async e=>{
    for(const k of ['diary','exp','set','cr'])if(!store[k].sha){store[k].salt=shared.salt;store[k].key=shared.key}
    loaded=true;$('#lock').classList.add('hide');document.body.classList.remove('locked');
    ['#fTok','#fPw','#fCfm'].forEach(i=>$(i).value='');
-   show('home');idle();
+   show('diary');idle();
   }
  }catch(ex){err.textContent=ex.message==='WRONG_PW'?'Wrong password.':ex.message}
  btn.disabled=false;btn.textContent='Unlock';
@@ -819,7 +846,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)rollDay()}
 addEventListener('focus',rollDay);
 
 function render(){
- const v=['home','diary','exp','dash','set'].find(k=>!$('#v-'+k).classList.contains('hide'));
+ const v=['diary','exp','dash','set'].find(k=>!$('#v-'+k).classList.contains('hide'));
  if(v==='diary')renderDiary();
  if(v==='exp')renderExp();
  if(v==='dash')renderDash();
