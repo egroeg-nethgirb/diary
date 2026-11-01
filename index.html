@@ -37,7 +37,7 @@ body::after{width:50vmax;height:50vmax;right:-14vmax;bottom:-16vmax;background:r
 h1,h2,h3{font-family:var(--serif);font-weight:500;margin:0 0 .5rem}
 h1{font-size:2.15rem;line-height:1.1;letter-spacing:.005em;margin-bottom:1rem;padding-right:3.5rem}
 .card h3{font:600 .74rem var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--acc)}
-#dlabel,#elabel,#dtLabel{font:500 1.3rem var(--serif);letter-spacing:0;text-transform:none;color:var(--ink)}
+#dlabel,#elabel{font:500 1.3rem var(--serif);letter-spacing:0;text-transform:none;color:var(--ink)}
 #dlabel{margin-bottom:.25rem}
 .mute{color:var(--mute);font-size:.9rem}
 .hide{display:none!important}
@@ -49,7 +49,9 @@ button{font:inherit;cursor:pointer;min-height:44px;touch-action:manipulation}
 nav{width:200px;flex-shrink:0;margin:1rem 0 1rem 1rem;padding:1.25rem .75rem;position:sticky;top:1rem;align-self:flex-start;height:calc(100vh - 2rem);display:flex;flex-direction:column;gap:.35rem;color:var(--ink);background:var(--nav);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow),inset 0 1px 0 var(--spec);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
 nav .brand{font:500 1.5rem var(--serif);letter-spacing:.02em;padding:0 .75rem;margin-bottom:1rem}
 nav button{display:flex;align-items:center;background:none;border:0;color:inherit;text-align:left;padding:.55rem .75rem;border-radius:16px}
-nav button i{font-style:normal;margin-right:.6rem}
+nav button i{display:inline-flex;font-style:normal;margin-right:.6rem}
+nav button i svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease,stroke-width .2s ease}
+nav button.on i svg{stroke-width:2.1;transform:translateY(-1px) scale(1.08)}
 nav button.on{background:var(--glass);color:var(--acc);font-weight:600;box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 var(--spec)}
 nav .sp{flex:1}
 main{position:relative;flex:1;min-width:0;max-width:960px;padding:2rem}
@@ -75,7 +77,7 @@ select{padding:.6rem .75rem;min-height:44px}
 textarea{resize:vertical;min-height:200px;line-height:1.7}
 #note,#expIn{padding:.9rem 1rem;border-radius:20px}
 #note{min-height:300px;font-size:1.02rem}
-#expIn{min-height:90px}
+#expIn{min-height:260px}
 ::placeholder{color:var(--mute);opacity:.85}
 .btn{min-height:44px;padding:.55rem 1.2rem;background:var(--gold);color:var(--gold-ink);border:1px solid rgba(255,240,205,.5);border-radius:16px;font-weight:600;letter-spacing:.02em;box-shadow:0 8px 22px -10px rgba(214,179,106,.65),inset 0 1px 0 rgba(255,255,255,.45)}
 .btn.ghost{background:var(--glass-in);color:var(--ink);border:1px solid var(--line);box-shadow:none}
@@ -114,11 +116,11 @@ td.pen{background:none;border:0;border-radius:0}
 /* lists, dashboard */
 table{width:100%;border-collapse:collapse}
 td{padding:.5rem .25rem;border-bottom:1px solid var(--line)}
-#list td,#brk td{height:2.8rem}
+#brk td{height:2.8rem}
 td.n{text-align:right;font-variant-numeric:tabular-nums lining-nums}
 td button{min-width:40px;min-height:40px;background:none;border:0;color:var(--mute);padding:.5rem .8rem}
 td button:hover{color:var(--bad)}
-#eTotal,.leg li{font-variant-numeric:tabular-nums lining-nums}
+.leg li{font-variant-numeric:tabular-nums lining-nums}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin:1rem 0}
 .stats div{padding:.8rem 1rem;background:var(--glass);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow),inset 0 1px 0 var(--spec)}
 .stats b{display:block;font:500 1.7rem var(--serif);font-variant-numeric:tabular-nums lining-nums}
@@ -194,6 +196,49 @@ tr.out td{opacity:0;transition:opacity .17s ease}
  #unlockBtn:hover::after{transform:translateX(330%) skewX(-18deg)}
 }
 
+/* premium icons, day headers, swipe cards */
+.themebtn{display:grid;place-items:center}
+.themebtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.swipe,.swipe textarea{touch-action:pan-y}
+html,body{overscroll-behavior-x:none}
+.dayhd{display:flex;align-items:center;justify-content:space-between;gap:.4rem;margin-bottom:.5rem}
+.dayhd h3{flex:1;margin:0;text-align:center}
+.dayhd #dlabel,.dayhd #elabel{margin:0;font-size:1.12rem;line-height:1.25}
+.dayhd button{flex:none;width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;background:var(--glass-in);border:1px solid var(--line);color:var(--ink);font-size:1.3rem;line-height:1}
+.dayhd button:disabled{opacity:.32;cursor:default}
+@keyframes swInL{from{opacity:0;transform:translateX(34px)}to{opacity:1;transform:none}}
+@keyframes swInR{from{opacity:0;transform:translateX(-34px)}to{opacity:1;transform:none}}
+main>section:not(.hide)>.swL{animation:swInL .26s cubic-bezier(.2,.7,.2,1)}
+main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
+#expSt,#noteSt{min-height:1.4em}
+#expHint{margin:.5rem 0 0;font-size:.82rem}
+#eDayCap{text-align:center;margin:-.4rem 0 0}
+/* dashboard: swipeable pie / bar chart */
+.chartcard .pgh{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:.5rem}
+.chartcard .pgh h3{margin:0}
+.dots{display:flex;gap:0}
+.dots button{width:34px;height:34px;min-height:34px;padding:0;background:none;border:0;display:grid;place-items:center}
+.dots button::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--line);transition:transform .2s ease,background-color .2s ease}
+.dots button.on::before{background:var(--acc);transform:scale(1.4)}
+.pager{overflow:hidden;touch-action:pan-y;transition:height .28s ease}
+.track{display:flex;align-items:flex-start;transition:transform .34s cubic-bezier(.2,.7,.2,1);will-change:transform}
+.track.drag{transition:none}
+.slide{flex:0 0 100%;min-width:0}
+.bchips{display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap;margin-bottom:.3rem}
+.bchips button{display:inline-flex;align-items:center;gap:.45rem;min-height:36px;padding:.2rem .85rem;border-radius:999px;border:1px solid var(--line);background:var(--glass-in);color:var(--mute);font-size:.88rem;font-weight:600}
+.bchips .sw{width:10px;height:10px;border-radius:3px;background:var(--c);opacity:.4}
+.bchips button[aria-pressed="true"]{background:var(--acc2);color:var(--ink);border-color:var(--acc)}
+.bchips button[aria-pressed="true"] .sw{opacity:1}
+#bars{display:block;width:100%;height:auto;touch-action:pan-y;cursor:pointer}
+#bars text{font:500 10.5px var(--sans);fill:var(--mute)}
+#bars .gl{stroke:var(--line);stroke-width:1}
+#bars .bs{fill:var(--acc)}
+#bars .bc{fill:#4fae98}
+#bars .hl{fill:var(--acc2)}
+#bars.animate .bar{transform-box:fill-box;transform-origin:50% 100%;animation:barIn .55s cubic-bezier(.2,.7,.2,1) backwards}
+@keyframes barIn{from{transform:scaleY(0)}to{transform:none}}
+#barInfo{min-height:1.5em;margin:.35rem 0 0;text-align:center}
+
 @media(max-width:760px){
  body{display:block}
  body::before,body::after{display:none}
@@ -211,7 +256,6 @@ tr.out td{opacity:0;transition:opacity .17s ease}
  .stats div{padding:.6rem .7rem}
  .stats b{font-size:1.25rem}
  textarea{min-height:36vh}
- #expIn{min-height:110px}
  .row>.btn{flex:1 1 100%;width:100%}
  .pie{justify-content:center}
  #toast{left:1rem;right:1rem;bottom:calc(100px + env(safe-area-inset-bottom));text-align:center}
@@ -235,11 +279,11 @@ tr.out td{opacity:0;transition:opacity .17s ease}
 </form></div>
 <nav>
   <div class="brand">Notebook</div>
-  <button data-v="diary"><i>📖</i><span>Diary</span></button>
-  <button data-v="exp"><i>💸</i><span>Expenses</span></button>
-  <button data-v="dash"><i>📊</i><span>Dashboard</span></button>
+  <button data-v="diary"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.6C10.4 5.3 8 4.8 4.5 5v13c3.5-.2 5.9.3 7.5 1.6"/><path d="M12 6.6c1.6-1.3 4-1.8 7.5-1.6v13c-3.5-.2-5.9.3-7.5 1.6"/><path d="M12 6.6v13"/></svg></i><span>Diary</span></button>
+  <button data-v="exp"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17v3"/><path d="M4 7.5v9A2.5 2.5 0 0 0 6.5 19H19a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 7.5z"/><circle cx="16" cy="13.5" r="1.1"/></svg></i><span>Expenses</span></button>
+  <button data-v="dash"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 19.5v-7"/><path d="M12 19.5v-14"/><path d="M18.5 19.5v-9"/></svg></i><span>Dashboard</span></button>
   <div class="sp"></div>
-  <button data-v="set"><i>⚙️</i><span>Settings</span></button>
+  <button data-v="set"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h8"/><path d="M17 7h3"/><circle cx="14.5" cy="7" r="2.2"/><path d="M4 17h3"/><path d="M12 17h8"/><circle cx="9.5" cy="17" r="2.2"/></svg></i><span>Settings</span></button>
 </nav>
 <main>
 
@@ -249,8 +293,8 @@ tr.out td{opacity:0;transition:opacity .17s ease}
 <section id="v-diary" class="hide">
   <h1>Diary</h1>
   <div id="banner" class="banner hide"><span id="bannerGo"></span><button id="bannerX" aria-label="Dismiss">✕</button></div>
-  <div class="card">
-    <h3 id="dlabel"></h3>
+  <div class="card swipe" id="noteCard">
+    <div class="dayhd"><button type="button" id="dPrevDay" aria-label="Previous day">‹</button><h3 id="dlabel"></h3><button type="button" id="dNextDay" aria-label="Next day">›</button></div>
     <textarea id="note" placeholder="What happened today?"></textarea>
     <div class="row"><button class="btn" id="saveNote">Save note</button><span class="mute" id="noteSt"></span></div>
   </div>
@@ -259,16 +303,15 @@ tr.out td{opacity:0;transition:opacity .17s ease}
 
 <section id="v-exp" class="hide">
   <h1>Expenses</h1>
-  <div class="card">
-    <h3 id="elabel"></h3>
-    <textarea id="expIn" placeholder="Starbucks coffee 6&#10;Uber to work 12&#10;Credit Salary 50000"></textarea>
-    <div class="row"><button class="btn" id="addExp">Add expenses</button></div>
+  <div class="card swipe" id="expCard">
+    <div class="dayhd"><button type="button" id="ePrevDay" aria-label="Previous day">‹</button><h3 id="elabel"></h3><button type="button" id="eNextDay" aria-label="Next day">›</button></div>
+    <textarea id="expIn" aria-label="Expenses and credits for this day" placeholder="Starbucks coffee 6&#10;Uber to work 12&#10;Credit Salary 50000"></textarea>
+    <p class="mute" id="expHint">One entry per line with the amount at the end. Start a line with credit for money received. Add @Category at the end to set a category. It saves by itself.</p>
+    <div class="row"><button class="btn" id="addExp">Save</button><span class="mute" id="expSt"></span></div>
   </div>
   <div class="card calcard"><div class="calh"><button id="eprev" aria-label="Previous month">‹</button><button class="ml" id="emlabel" type="button" aria-label="Choose month and year"></button><button id="enext" aria-label="Next month">›</button></div><div class="pk hide" id="epk"></div><div class="grid" id="ecal"></div></div>
-  <div class="card hide" id="expDetail" style="margin-top:1rem">
-    <div class="row" style="margin:0 0 .3rem;justify-content:space-between"><h3 id="dtLabel" style="margin:0"></h3><b id="eTotal"></b></div>
-    <table id="list"></table>
-  </div>
+  <div class="stats" id="expDetail"><div><span class="mute">Spent</span><b id="eSpent"></b></div><div><span class="mute">Credit</span><b id="eCredit"></b></div></div>
+  <p class="mute" id="eDayCap"></p>
 </section>
 
 <section id="v-dash" class="hide">
@@ -282,7 +325,18 @@ tr.out td{opacity:0;transition:opacity .17s ease}
     <div><span class="mute">Credit</span><b id="sCredit"></b></div>
   </div>
   <div class="card" id="brkCard"><h3 id="brkH"></h3><table id="brk"></table><div class="row" style="justify-content:center"><button class="btn ghost hide" id="brkMore" type="button"></button></div></div>
-  <div class="card"><h3>By category</h3><div class="pie"><i id="pie"></i><ul class="leg" id="leg"></ul></div></div>
+  <div class="card chartcard" id="chartCard">
+    <div class="pgh"><h3 id="chartH">By category</h3><div class="dots" id="chartDots"><button type="button" data-p="0" class="on" aria-label="Show category chart"></button><button type="button" data-p="1" aria-label="Show daily chart"></button></div></div>
+    <div class="pager" id="pager"><div class="track" id="track">
+      <div class="slide"><div class="pie"><i id="pie"></i><ul class="leg" id="leg"></ul></div></div>
+      <div class="slide">
+        <div class="bchips" id="bchips"><button type="button" data-s="s" aria-pressed="true" style="--c:var(--acc)"><span class="sw"></span>Spent</button><button type="button" data-s="c" aria-pressed="true" style="--c:#4fae98"><span class="sw"></span>Credit</button></div>
+        <svg id="bars" role="img" aria-label="Spent and credit per day"></svg>
+        <p class="mute" id="barInfo"></p>
+      </div>
+    </div></div>
+    <p class="mute" style="text-align:center;margin:.6rem 0 0;font-size:.8rem">Swipe sideways to switch charts</p>
+  </div>
 </section>
 
 <section id="v-set" class="hide">
@@ -665,7 +719,7 @@ addEventListener('pagehide',()=>{saveLocalNow()});
 /* ---------- ui helpers ---------- */
 let tt;
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(tt);tt=setTimeout(()=>t.className='',3500)}
-function show(v){flushNote();if(v==='dash')_cnt=new WeakMap();
+function show(v){flushNote();flushExp();if(v==='dash')_cnt=new WeakMap();
  ['diary','exp','dash','set'].forEach(k=>$('#v-'+k).classList.toggle('hide',k!==v));
  $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
  render();
@@ -715,7 +769,21 @@ function countTo(el,to){
  el._raf=requestAnimationFrame(step);
 }
 function popSel(g){const b=g.querySelector('.sel');if(b){b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop')}}
-function slide(g,c){g.classList.remove('slideL','slideR');void g.offsetWidth;g.classList.add(c)}
+function slide(g,c){g.classList.remove('slideL','slideR','swL','swR');void g.offsetWidth;g.classList.add(c)}
+/* swipe left or right on an element (touch only; mouse users get the arrow buttons) */
+function onSwipe(el,left,right){
+ let x0=0,y0=0,t0=0,ok=false;
+ el.addEventListener('touchstart',e=>{if(e.touches.length!==1){ok=false;return}const t=e.touches[0];x0=t.clientX;y0=t.clientY;t0=Date.now();ok=true},{passive:true});
+ el.addEventListener('touchcancel',()=>{ok=false},{passive:true});
+ el.addEventListener('touchend',e=>{
+  if(!ok)return;ok=false;
+  const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;
+  if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.6||Date.now()-t0>900)return;
+  const a=document.activeElement;if(a&&a.tagName==='TEXTAREA'&&a.selectionStart!==a.selectionEnd)return; // selecting text, not swiping
+  dx<0?left():right();
+ },{passive:true});
+}
+const stepDay=(k,n)=>{const d=new Date(k+'T00:00');d.setDate(d.getDate()+n);return ymd(d)};
 
 /* ---------- diary (auto-saves) ---------- */
 let selDay=TODAY,month=firstOfMonth(),noteDirty=false,noteTimer,bannerOff=false,pendingDay=null;
@@ -738,6 +806,7 @@ function renderDiary(){
  if(pendingDay)$('#bannerGo').textContent='You haven’t written your note for '+new Date(pendingDay+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short'})+' yet!';
  drawCal($('#cal'),$('#mlabel'),month,selDay,k=>hasNote(d,k));
  $('#dlabel').textContent=prettyDay(selDay);
+ $('#dNextDay').disabled=selDay>=TODAY;
  if(!noteDirty){$('#note').value=d[selDay]||'';$('#noteSt').textContent=''}
 }
 async function saveNote(day,text){
@@ -753,19 +822,25 @@ $('#note').oninput=()=>{noteDirty=true;$('#noteSt').textContent='Typing…';clea
 $('#note').onblur=flushNote;
 $('#saveNote').onclick=()=>{noteDirty=false;saveNote(selDay,$('#note').value)};
 $('#cal').onclick=e=>{const b=e.target.closest('[data-d]');if(b){flushNote();selDay=b.dataset.d;renderDiary();popSel($('#cal'));toView($('#dlabel'))}};
+function moveDiary(n){
+ const k=stepDay(selDay,n);if(k>TODAY)return; // never into the future
+ flushNote();selDay=k;month=new Date(+k.slice(0,4),+k.slice(5,7)-1,1);
+ renderDiary();slide($('#noteCard'),n>0?'swL':'swR');
+}
+$('#dPrevDay').onclick=()=>moveDiary(-1);$('#dNextDay').onclick=()=>moveDiary(1);
+onSwipe($('#noteCard'),()=>moveDiary(1),()=>moveDiary(-1));
 $('#prev').onclick=()=>{shiftMonth(month,-1);renderDiary();slide($('#cal'),'slideR')};
 $('#next').onclick=()=>{shiftMonth(month,1);renderDiary();slide($('#cal'),'slideL')};
 $('#mlabel').onclick=()=>togglePicker($('#dpk'),()=>Object.keys(store.diary.data).filter(k=>hasNote(store.diary.data,k)),()=>month,d=>{month=d;renderDiary()});
 $('#bannerX').onclick=()=>{bannerOff=true;renderDiary()};
 $('#bannerGo').onclick=()=>{if(!pendingDay)return;flushNote();selDay=pendingDay;month=new Date(+pendingDay.slice(0,4),+pendingDay.slice(5,7)-1,1);renderDiary();$('#note').focus()};
-document.addEventListener('visibilitychange',()=>{if(document.hidden)flushNote()});
-addEventListener('pagehide',flushNote);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){flushNote();flushExp()}});
+addEventListener('pagehide',()=>{flushNote();flushExp()});
 
 /* ---------- expenses ---------- */
-let expDay=TODAY,emonth=firstOfMonth(),expShown=false,editId=null,justAdded=new Set();
+let expDay=TODAY,emonth=firstOfMonth(),expDirty=false,expTimer,expBad=[];
 const sumA=a=>a.reduce((t,x)=>t+x.amount,0);
 const rawOf=x=>x.raw||`${x.text} ${x.amount}`;
-const catOpts=(ac,sel)=>{sel=normCat(sel);return Object.keys(ac).map(n=>`<option${n===sel?' selected':''}>${esc(n)}</option>`).join('')+(ac[sel]?'':`<option selected>${esc(sel)}</option>`)};
 const CRRX=/^\s*credit(?!\s*card)\b/i;
 const crRaw=x=>x.raw||`credit<>${x.text}<>${x.amount}`;
 function parseCreditLine(line){
@@ -779,86 +854,83 @@ function parseCreditLine(line){
 const _ix=new WeakMap();
 function idx(arr){let c=_ix.get(arr);if(!c||c.n!==arr.length){c={n:arr.length,m:new Map()};for(const x of arr){let a=c.m.get(x.date);if(!a)c.m.set(x.date,a=[]);a.push(x)}_ix.set(arr,c)}return c.m}
 const dayItems=day=>[...(idx(store.cr.data).get(day)||[]).map(x=>({...x,_cr:1})),...(idx(store.exp.data).get(day)||[])];
-function renderExp(){
- const days=new Set([...idx(store.exp.data).keys(),...idx(store.cr.data).keys()]),ac=allCats();
- drawCal($('#ecal'),$('#emlabel'),emonth,expShown?expDay:null,k=>days.has(k));
+/* one line of the day box: credits first, then expenses, each as it was typed */
+const boxLine=x=>x._cr?(x.raw&&!x.raw.includes('<>')?x.raw:`credit ${x.text} ${x.amount}`):rawOf(x);
+let _nn=0;const nid=()=>Date.now().toString(36)+(_nn++).toString(36)+Math.random().toString(36).slice(2,5);
+function renderExp(force){
+ const days=new Set([...idx(store.exp.data).keys(),...idx(store.cr.data).keys()]);
+ drawCal($('#ecal'),$('#emlabel'),emonth,expDay,k=>days.has(k));
  $('#elabel').textContent=prettyDay(expDay);
- $('#expDetail').classList.toggle('hide',!expShown);
- if(!expShown)return;
+ $('#eNextDay').disabled=expDay>=TODAY;
  const items=dayItems(expDay),sp=sumA(items.filter(x=>!x._cr)),gt=sumA(items.filter(x=>x._cr));
- $('#dtLabel').textContent=prettyDay(expDay);
- $('#eTotal').textContent=[sp?'Spent '+money(sp):'',gt?'Credit '+money(gt):''].filter(Boolean).join(' · ');
- $('#list').innerHTML=items.length?items.map(x=>{
-  const raw=x._cr?crRaw(x):rawOf(x);
-  if(x.id===editId)return `<tr><td colspan="3"><input id="editIn" value="${esc(raw)}" aria-label="Edit"><div class="row">${x._cr?'':`<select id="editCat">${catOpts(ac,x.cat)}</select>`}<button class="btn" data-save="${x.id}">Save</button><button class="btn ghost" data-cancel="1">Cancel</button></div></td></tr>`;
-  return `<tr${justAdded.has(x.id)?' class="new"':''}><td>${x._cr?'💰':catInfo(x.cat).icon} ${esc(raw)}</td><td class="pen"><button data-edit="${x.id}" aria-label="Edit">✏️</button></td><td class="pen"><button data-del="${x.id}" aria-label="Delete">✕</button></td></tr>`}).join(''):'<tr><td class="mute">Nothing logged for this day.</td></tr>';
- justAdded=new Set();
+ countTo($('#eSpent'),sp);countTo($('#eCredit'),gt);
+ $('#eDayCap').textContent='Totals for '+new Date(expDay+'T00:00').toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'});
+ const box=$('#expIn');
+ if(force||(!expDirty&&document.activeElement!==box)){
+  box.value=items.map(boxLine).concat(expBad).join('\n');
+  if(force)$('#expSt').textContent='';
+ }
 }
+/* Saves the day exactly as written in the box: unchanged lines stay as they are, new or edited lines are read again, removed lines are deleted. */
+async function saveExp(day,text){
+ clearTimeout(expTimer);
+ const lines=text.split('\n').map(x=>x.trim()).filter(Boolean);
+ const pool=[...(idx(store.cr.data).get(day)||[]).map(x=>({k:'cr',x,key:boxLine({...x,_cr:1})})),...(idx(store.exp.data).get(day)||[]).map(x=>({k:'exp',x,key:boxLine(x)}))];
+ const outE=[],outC=[],bad=[],unk=new Set(),fresh=new Set();let chE=false,chC=false;
+ for(const l0 of lines){
+  const i=pool.findIndex(p=>p.key===l0);
+  if(i>=0){const p=pool.splice(i,1)[0];(p.k==='cr'?outC:outE).push(p.x);continue}
+  let l=l0,forced=null;const tm=l.match(/\s@([^@]+)$/);
+  if(tm&&!CRRX.test(l)){forced=normCat(tm[1].trim());l=l.slice(0,tm.index).trim()}
+  if(CRRX.test(l)){const c=parseCreditLine(l);if(c){const it={id:nid(),date:day,raw:l,...c};outC.push(it);chC=true}else bad.push(l0);continue}
+  const p=parseLine(l);if(!p){bad.push(l0);continue}
+  if(forced){if(allCats()[forced])p.cat=forced;else unk.add(forced)}
+  const it={id:nid(),date:day,raw:l,...p};outE.push(it);fresh.add(it.id);chE=true;
+ }
+ for(const p of pool){if(p.k==='cr')chC=true;else chE=true}
+ const badMsg=bad.length?`${bad.length} line${bad.length>1?'s need':' needs'} an amount at the end, so ${bad.length>1?'they are':'it is'} not saved yet`:'';
+ if(day===expDay)expBad=bad;
+ if(!chE&&!chC){
+  if(day===expDay){expDirty=expDirty&&$('#expIn').value!==text;$('#expSt').textContent=badMsg||(pendingSync?'Saved on this device':'Saved ✓');renderExp()}
+  return;
+ }
+ const be=store.exp.data,bc=store.cr.data;
+ const rmE=new Set((idx(be).get(day)||[]).map(x=>x.id)),rmC=new Set((idx(bc).get(day)||[]).map(x=>x.id));
+ if(chE)store.exp.data=be.filter(x=>!rmE.has(x.id)).concat(outE);
+ if(chC)store.cr.data=bc.filter(x=>!rmC.has(x.id)).concat(outC);
+ if(day===expDay)$('#expSt').textContent='Saving…';
+ let err=null;
+ try{if(chE)await push('exp','Expenses '+day)}catch(e){store.exp.data=be;store.cr.data=bc;err=e}
+ if(!err){try{if(chC)await push('cr','Credit '+day)}catch(e){store.cr.data=bc;err=e}}
+ if(err){if(day===expDay){expDirty=true;$('#expSt').textContent='Not saved yet'}toast(err.message,1);return}
+ if(day===expDay){
+  if($('#expIn').value===text)expDirty=false;
+  $('#expSt').textContent=badMsg||(unk.size?'Category not found: '+[...unk].join(', ')+'. It was sorted automatically.':(pendingSync?'Saved on this device':'Saved ✓'));
+  const o=outE.filter(x=>fresh.has(x.id)&&x.cat==='Other').length;
+  if(o)toast(`${o} went to Other. Add @Category at the end of the line to change it.`);
+ }
+ renderExp();
+}
+function flushExp(){if(expDirty&&loaded){expDirty=false;saveExp(expDay,$('#expIn').value)}}
+function selectExpDay(k,dir){
+ flushExp();expDay=k;expBad=[];expDirty=false;
+ emonth=new Date(+k.slice(0,4),+k.slice(5,7)-1,1);
+ renderExp(true);if(dir)slide($('#expCard'),dir>0?'swL':'swR');
+}
+function moveExp(n){const k=stepDay(expDay,n);if(k>TODAY)return;selectExpDay(k,n)}
+$('#ePrevDay').onclick=()=>moveExp(-1);$('#eNextDay').onclick=()=>moveExp(1);
+onSwipe($('#expCard'),()=>moveExp(1),()=>moveExp(-1));
+$('#expIn').oninput=()=>{expDirty=true;$('#expSt').textContent='Typing…';clearTimeout(expTimer);expTimer=setTimeout(flushExp,4000)};
+$('#expIn').onblur=flushExp;
+$('#addExp').onclick=async()=>{expDirty=false;await saveExp(expDay,$('#expIn').value);if(!expDirty){const st=$('#expSt').textContent;renderExp(true);$('#expSt').textContent=st}};
 $('#ecal').onclick=e=>{
  const b=e.target.closest('[data-d]');if(!b)return;
- const k=b.dataset.d;editId=null;
- if(expShown&&k===expDay)expShown=false;else{expDay=k;expShown=true}
- renderExp();popSel($('#ecal'));if(expShown)toView($('#expDetail'));
+ if(b.dataset.d!==expDay)selectExpDay(b.dataset.d,0);
+ popSel($('#ecal'));toView($('#expCard'));
 };
 $('#eprev').onclick=()=>{shiftMonth(emonth,-1);renderExp();slide($('#ecal'),'slideR')};
 $('#enext').onclick=()=>{shiftMonth(emonth,1);renderExp();slide($('#ecal'),'slideL')};
 $('#emlabel').onclick=()=>togglePicker($('#epk'),()=>[...idx(store.exp.data).keys(),...idx(store.cr.data).keys()],()=>emonth,d=>{emonth=d;renderExp()});
-$('#addExp').onclick=async()=>{
- const lines=$('#expIn').value.split('\n').map(x=>x.trim()).filter(Boolean),items=[],crs=[],crLines=[],bad=[];
- const nid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
- lines.forEach(l=>{
-  if(CRRX.test(l)){const c=parseCreditLine(l);if(c){crs.push({id:nid(),date:expDay,raw:l,...c});crLines.push(l)}else bad.push(l);return}
-  const p=parseLine(l);p?items.push({id:nid(),date:expDay,raw:l,...p}):bad.push(l);
- });
- if(!items.length&&!crs.length){toast('Add an amount at the end, like “Lunch 8” or credit Salary 50000.',1);return}
- const be=store.exp.data.slice(),bc=store.cr.data.slice(),btn=$('#addExp');btn.disabled=true;
- store.exp.data=be.concat(items);store.cr.data=bc.concat(crs);
- let keep=bad.join('\n'),err=null;
- try{if(items.length)await push('exp','Expenses '+expDay)}catch(e){store.exp.data=be;store.cr.data=bc;err=e;keep=$('#expIn').value}
- if(!err){try{if(crs.length)await push('cr','Credit '+expDay)}catch(e){store.cr.data=bc;err=e;keep=crLines.concat(bad).join('\n')}}
- if(err)toast(err.message,1);
- else{
-  $('#expIn').value=keep;expShown=true;editId=null;justAdded=new Set([...items,...crs].map(x=>x.id));
-  const o=items.filter(x=>x.cat==='Other').length;
-  let m='Added '+[items.length?items.length+' expense(s)':'',crs.length?crs.length+' credit(s)':''].filter(Boolean).join(' and ');
-  if(bad.length)m+=`. ${bad.length} line(s) had no amount`;
-  if(o)m+=`. ${o} went to Other: tap ✏️ to change it`;
-  toast(m);
- }
- if(err)$('#expIn').value=keep;
- btn.disabled=false;renderExp();
-};
-const findItem=id=>{let it=store.exp.data.find(x=>x.id===id);if(it)return {it,k:'exp'};it=store.cr.data.find(x=>x.id===id);return it?{it,k:'cr'}:null};
-$('#list').onclick=async e=>{
- const b=e.target.closest('button');if(!b)return;const D=b.dataset;
- if(D.edit){editId=D.edit;renderExp();const i=$('#editIn');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}return}
- if(D.cancel){editId=null;renderExp();return}
- if(D.save){
-  const f=findItem(D.save);if(!f)return;
-  const raw=$('#editIn').value.trim(),snap={...f.it};
-  if(f.k==='cr'){
-   const c=CRRX.test(raw)?parseCreditLine(raw):null;
-   if(!c){toast('Write it like credit Salary 50000.',1);return}
-   Object.assign(f.it,{raw,text:c.text,amount:c.amount});
-  }else{
-   const p=parseLine(raw);
-   if(!p){toast('Put the amount at the end, like “Lunch 8”.',1);return}
-   const sel=$('#editCat').value;
-   Object.assign(f.it,{raw,text:p.text,amount:p.amount,cat:sel!==normCat(snap.cat)?sel:(raw!==rawOf(snap)?p.cat:snap.cat)});
-  }
-  editId=null;
-  try{await push(f.k,'Edit entry')}catch(err){Object.assign(f.it,snap);toast(err.message,1)}
-  renderExp();return;
- }
- if(D.del){
-  const tr=b.closest('tr');if(tr&&!RM()){tr.classList.add('out');await new Promise(r=>setTimeout(r,170))}
-  const f=findItem(D.del);if(!f)return;
-  const before=store[f.k].data.slice();store[f.k].data=before.filter(x=>x.id!==D.del);
-  try{await push(f.k,'Delete entry')}catch(err){store[f.k].data=before;toast(err.message,1)}
-  renderExp();
- }
-};
-$('#list').onkeydown=e=>{if(e.key==='Enter'&&e.target.id==='editIn'){e.preventDefault();const b=$('#list [data-save]');if(b)b.click()}};
 
 /* ---------- dashboard ---------- */
 let dmode='month',dref=new Date(),brkLimit=7;
@@ -900,6 +972,7 @@ function renderDash(){
  const stops=ent.map(([c,v])=>{const st=acc/tot*100;acc+=v;return `${catInfo(c).color} ${st}% ${acc/tot*100}%`});
  $('#pie').style.background=ent.length?`conic-gradient(${stops.join(',')})`:'var(--line)';
  $('#leg').innerHTML=ent.length?ent.map(([c,v])=>`<li><s style="background:${catInfo(c).color}"></s>${catInfo(c).icon} ${esc(c)}: ${money(v)} <span class="mute">(${Math.round(v/tot*100)}%)</span></li>`).join(''):'<li class="mute">No data for this period.</li>';
+ renderBars();setPage(dpage);
 }
 $('#seg').onclick=e=>{const b=e.target.closest('[data-m]');if(b){dmode=b.dataset.m;brkLimit=7;renderDash()}};
 $('#dprev').onclick=()=>stepDash(-1);$('#dnext').onclick=()=>stepDash(1);
@@ -907,6 +980,96 @@ $('#brkMore').onclick=()=>{
  const total=new Set(store.exp.data.filter(x=>x.date.startsWith(pk())).map(x=>x.date)).size;
  brkLimit=brkLimit<total?brkLimit+7:7;renderDash();
 };
+
+/* ---------- dashboard charts: swipe between the pie and the bar chart ---------- */
+let dpage=0,barShow={s:true,c:true},barKey=null,barSig='',barGeo={n:0};
+function fitPager(){const s=$$('#track .slide')[dpage],pg=$('#pager');if(s&&pg&&s.offsetHeight)pg.style.height=s.offsetHeight+'px'}
+function setPage(p){
+ dpage=p;
+ $('#track').style.transform=`translateX(${-p*100}%)`;
+ $$('#chartDots button').forEach((b,i)=>{b.classList.toggle('on',i===p);b.setAttribute('aria-current',i===p?'true':'false')});
+ $$('#track .slide').forEach((el,i)=>{el.toggleAttribute('inert',i!==p);el.setAttribute('aria-hidden',i!==p?'true':'false')});
+ $('#chartH').textContent=p===0?'By category':(dmode==='year'?'Spent and credit per month':'Spent and credit per day');
+ fitPager();
+}
+$('#chartDots').onclick=e=>{const b=e.target.closest('[data-p]');if(b)setPage(+b.dataset.p)};
+(function(){
+ const pg=$('#pager'),tr=$('#track');let sx=0,sy=0,dx=0,id=null,mode=null,t0=0;
+ pg.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;id=e.pointerId;sx=e.clientX;sy=e.clientY;dx=0;mode=null;t0=Date.now()});
+ pg.addEventListener('pointermove',e=>{
+  if(e.pointerId!==id)return;
+  const x=e.clientX-sx,y=e.clientY-sy;
+  if(mode===null){
+   if(Math.abs(x)>8&&Math.abs(x)>Math.abs(y)*1.2){mode='h';try{pg.setPointerCapture(id)}catch(_){}tr.classList.add('drag')}
+   else if(Math.abs(y)>8)mode='v';
+  }
+  if(mode!=='h')return;
+  dx=x;let off=dx;
+  if((dpage===0&&dx>0)||(dpage===1&&dx<0))off=dx*.3; // resist at the ends
+  tr.style.transform=`translateX(${-dpage*pg.clientWidth+off}px)`;
+ });
+ const end=e=>{
+  if(e.pointerId!==id)return;id=null;tr.classList.remove('drag');
+  if(mode==='h'){
+   const w=pg.clientWidth,fast=Date.now()-t0<300&&Math.abs(dx)>30;let p=dpage;
+   if(dx<-w*.2||(fast&&dx<0))p=Math.min(1,dpage+1);else if(dx>w*.2||(fast&&dx>0))p=Math.max(0,dpage-1);
+   setPage(p);
+  }
+  mode=null;
+ };
+ pg.addEventListener('pointerup',end);pg.addEventListener('pointercancel',end);
+})();
+function renderBars(){
+ const svg=$('#bars'),year=dmode==='year',P=pk(),pre=year?P:P.slice(0,7);
+ const keys=[],labs=[];
+ if(year)for(let m=1;m<=12;m++){keys.push(P+'-'+pad(m));labs.push(new Date(2000,m-1,1).toLocaleDateString(undefined,{month:'short'}))}
+ else{const y=+pre.slice(0,4),m=+pre.slice(5,7),n=new Date(y,m,0).getDate();for(let d=1;d<=n;d++){keys.push(pre+'-'+pad(d));labs.push(String(d))}}
+ const sumBy=arr=>{const o={};arr.forEach(x=>{if(!x.date.startsWith(pre))return;const k=year?x.date.slice(0,7):x.date;o[k]=(o[k]||0)+x.amount});return o};
+ const es=sumBy(store.exp.data),cs=sumBy(store.cr.data);
+ const S=keys.map(k=>es[k]||0),C=keys.map(k=>cs[k]||0);
+ if(dmode==='day')barKey=P;
+ else if(!keys.includes(barKey))barKey=null;
+ $$('#bchips button').forEach(b=>b.setAttribute('aria-pressed',String(barShow[b.dataset.s])));
+ const maxV=Math.max(0,...(barShow.s?S:[0]),...(barShow.c?C:[0]));
+ const W=Math.max(240,Math.floor(svg.parentNode.clientWidth||320)),H=220,L=34,R=4,T=8,B=22,iw=W-L-R,ih=H-T-B,n=keys.length,gw=iw/n;
+ const sig=[dmode,pre,barShow.s,barShow.c,W].join('|'),animate=sig!==barSig;barSig=sig;
+ svg.classList.toggle('animate',animate);
+ svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+ const nice=v=>{const e=Math.pow(10,Math.floor(Math.log10(v))),f=v/e;return(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*e};
+ const tk=v=>v>=1e5?(Math.round(v/1e4)/10)+'L':v>=1e3?(Math.round(v/100)/10)+'k':String(Math.round(v*10)/10);
+ const step=maxV?nice(maxV/4):1,top=maxV?step*Math.ceil(maxV/step-1e-9):4;
+ let h='';
+ for(let v=0;v<=top+1e-9;v+=step){const y=T+ih-v/top*ih;h+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y}" y2="${y}"/><text x="${L-6}" y="${y+3.5}" text-anchor="end">${tk(v)}</text>`}
+ const bi=keys.indexOf(barKey);
+ if(bi>=0)h+=`<rect class="hl" x="${L+gw*bi}" y="${T}" width="${gw}" height="${ih}" rx="5"/>`;
+ const ns=(barShow.s?1:0)+(barShow.c?1:0),bw=Math.max(2,Math.min(16,gw*.66/ns)),gap=ns===2?1.5:0;
+ keys.forEach((k,i)=>{
+  const cx=L+gw*(i+.5);let x=cx-(ns*bw+gap*(ns-1))/2;
+  const bar=(v,cls)=>{if(v>0){const bh=Math.max(1.5,v/top*ih);h+=`<rect class="bar ${cls}" x="${x}" y="${T+ih-bh}" width="${bw}" height="${bh}" rx="${Math.min(3,bw/2)}"/>`}x+=bw+gap};
+  if(barShow.s)bar(S[i],'bs');
+  if(barShow.c)bar(C[i],'bc');
+  if(year||i===0||(i+1)%5===0||i===n-1&&n-1-i>=0&&(i+1)%5>2)h+=`<text x="${cx}" y="${H-6}" text-anchor="middle">${labs[i]}</text>`;
+ });
+ svg.innerHTML=h;
+ barGeo={n,gw,L,W,keys};
+ const info=$('#barInfo');
+ if(bi>=0){
+  const lab=year?new Date(barKey+'-01T00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}):new Date(barKey+'T00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+  info.textContent=lab+(barShow.s?' · Spent '+money(S[bi]):'')+(barShow.c?' · Credit '+money(C[bi]):'');
+ }else info.textContent=maxV?'Tap a bar to see its value.':'No data for this period.';
+}
+$('#bars').addEventListener('click',e=>{
+ if(!barGeo.n)return;
+ const r=e.currentTarget.getBoundingClientRect(),x=(e.clientX-r.left)*(barGeo.W/r.width)-barGeo.L,i=Math.floor(x/barGeo.gw);
+ if(i<0||i>=barGeo.n)return;
+ barKey=barGeo.keys[i];renderBars();
+});
+$('#bchips').onclick=e=>{
+ const b=e.target.closest('[data-s]');if(!b)return;const k=b.dataset.s;
+ barShow[k]=!barShow[k];if(!barShow.s&&!barShow.c)barShow[k==='s'?'c':'s']=true;
+ renderBars();
+};
+{let rz;addEventListener('resize',()=>{cancelAnimationFrame(rz);rz=requestAnimationFrame(()=>{if(!$('#v-dash').classList.contains('hide')){renderBars();fitPager()}})})}
 
 /* ---------- settings: categories, keywords, short forms ---------- */
 function renderSetLists(){
@@ -1081,7 +1244,7 @@ function applyTheme(){
  if(t==='auto')root.removeAttribute('data-theme');else root.setAttribute('data-theme',t);
  const dark=isDark();
  document.querySelector('meta[name=theme-color]').content=dark?'#090b14':'#f3eee3';
- $('#themeBtn').textContent=dark?'☀️':'🌙';
+ $('#themeBtn').innerHTML=dark?'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8 8 0 0 1 9.8 4 8 8 0 1 0 20 14.2z"/></svg>';
  $('#themeBtn').title=dark?'Switch to light mode':'Switch to dark mode';
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
@@ -1132,6 +1295,7 @@ function rollDay(){
  const n=ymd(new Date());if(n===TODAY)return;
  const old=TODAY,om=old.slice(0,7),sameMonth=d=>ymd(d).slice(0,7)===om;
  if(selDay===old)flushNote(); // save any unsaved text to the old day first
+ if(expDay===old)flushExp();
  TODAY=n;bannerOff=false;
  if(selDay===old)selDay=n;
  if(expDay===old)expDay=n;
