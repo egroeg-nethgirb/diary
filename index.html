@@ -133,6 +133,10 @@ td button:hover{color:var(--bad)}
 #toast.show{opacity:1;transform:none}
 #toast.err{background:rgba(176,58,46,.92);color:#fff}
 
+#instList{list-style:none;margin:.8rem 0 0;padding:0;font-size:.88rem;color:var(--mute)}
+#instList li{margin:.35rem 0}
+#instList span{opacity:.85}
+.netpill{cursor:pointer}
 /* login */
 #lock{position:fixed;inset:0;display:flex;padding:1rem;z-index:10;overflow:auto;color:#f4eddd;font-family:var(--sans);background:radial-gradient(55% 45% at 50% 10%,rgba(214,179,106,.3),transparent 70%),radial-gradient(60% 55% at 92% 88%,rgba(60,84,170,.6),transparent 70%),radial-gradient(55% 45% at 10% 85%,rgba(125,90,45,.38),transparent 70%),radial-gradient(50% 50% at 92% 8%,rgba(30,40,100,.75),transparent 70%),#090b14}
 body.locked nav,body.locked main{display:none}
@@ -306,6 +310,12 @@ tr.out td{opacity:0;transition:opacity .17s ease}
     <p class="mute" id="impSt" role="status"></p>
   </div>
   <div class="card set" style="margin-top:1rem">
+    <h3>Install app</h3>
+    <p class="mute">Install Notebook on this device so it opens like an app, even without internet.</p>
+    <div class="row"><button class="btn hide" id="instBtn" type="button">Install app</button></div>
+    <ul id="instList" role="status"></ul>
+  </div>
+  <div class="card set" style="margin-top:1rem">
     <h3>Offline use</h3>
     <p class="mute">Keeps an encrypted copy of your notebook on this device, so you can open it and write without internet. Anything you add offline uploads by itself when you are back online.</p>
     <label class="chk"><input type="checkbox" id="offOn"> Keep an offline copy on this device</label>
@@ -402,10 +412,13 @@ async function encryptObj(st){
 }
 
 function ready(){return cfg.owner&&cfg.repo&&cfg.tok}
+let T_GET=20000,T_PUT=30000; // a stalled phone connection is treated as offline after this long
 async function gh(path,opt={}){
  const url=`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`+(opt.method&&opt.method!=='GET'?'':`?ref=${encodeURIComponent(cfg.branch||'main')}`);
- try{return await fetch(url,{cache:'no-store',...opt,headers:{Authorization:'Bearer '+cfg.tok,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}})}
+ const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),opt.method==='PUT'?T_PUT:T_GET);
+ try{return await fetch(url,{cache:'no-store',...opt,signal:ctl.signal,headers:{Authorization:'Bearer '+cfg.tok,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}})}
  catch(e){const x=new Error('No internet connection.');x.net=true;throw x}
+ finally{clearTimeout(tm)}
 }
 const tokenErr=r=>r.status===401||r.status===403?'Token rejected. Check its repo access and Contents permission.':'GitHub error '+r.status;
 /* returns true if the file already existed */
@@ -545,7 +558,7 @@ async function migrate(){
 
 /* ---------- offline copy + sync ---------- */
 const isNetErr=e=>!!(e&&e.net);
-let offlineMode=false,pendingSync=false,syncing=false,saveT=null;
+let offlineMode=false,pendingSync=false,syncing=false,saveT=null,syncBackoff=0;
 const localOn=()=>{try{return localStorage.getItem('nb_offline')!=='0'}catch(e){return true}};
 function readCache(){try{return JSON.parse(localStorage.getItem('nb_cache')||'null')}catch(e){return null}}
 function buildPayload(){
@@ -612,8 +625,8 @@ async function recoverPending(pw){
  return n>0;
 }
 /* back online: merge what others changed, then upload what we changed */
-function syncAll(){
- if(syncing||!loaded||!cfg.tok)return Promise.resolve();
+function syncAll(force){
+ if(syncing||!loaded||!cfg.tok||(!force&&Date.now()<syncBackoff))return Promise.resolve();
  syncing=true;updateNet();
  return enqueue(async()=>{
   for(const k of KINDS){
@@ -628,19 +641,25 @@ function syncAll(){
   }
   await mergeRemote(store.set,true);
   if(JSON.stringify(store.set.data)!==store.set.base)await pushNow(store.set,'Sync settings');
- }).then(()=>{offlineMode=false;pendingSync=false;saveLocalSoon();render();toast('Everything is uploaded and up to date.')})
-  .catch(e=>{if(!isNetErr(e))toast('Sync problem: '+e.message,1)})
+ }).then(()=>{offlineMode=false;pendingSync=false;syncBackoff=0;saveLocalSoon();render();toast('Everything is uploaded and up to date.')})
+  .catch(e=>{if(!isNetErr(e)){syncBackoff=Date.now()+120000;toast('Upload problem: '+e.message,1)}})
   .finally(()=>{syncing=false;updateNet()});
 }
 function updateNet(){
  const el=$('#net');if(!el)return;
  el.classList.toggle('hide',!(loaded&&(pendingSync||offlineMode||syncing)));
  el.classList.toggle('sync',syncing);
- el.innerHTML=syncing?'⏳ Uploading…':'📴 Offline<span class="x"> · saved on device</span>';
+ el.title='Tap to upload now';
+ el.innerHTML=syncing?'⏳ Uploading…':navigator.onLine===false?'📴 Offline<span class="x"> · saved on device</span>':'⏳ Uploading soon<span class="x"> · tap to retry</span>';
 }
-addEventListener('online',()=>{if(loaded&&(pendingSync||offlineMode))syncAll()});
+const trySync=()=>{if(loaded&&(pendingSync||offlineMode)&&navigator.onLine!==false)syncAll()};
+addEventListener('online',()=>{updateNet();trySync()});
 addEventListener('offline',updateNet);
-setInterval(()=>{if(loaded&&(pendingSync||offlineMode)&&navigator.onLine!==false)syncAll()},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)trySync()});
+addEventListener('focus',trySync);addEventListener('pageshow',trySync);
+if(navigator.connection&&navigator.connection.addEventListener)navigator.connection.addEventListener('change',trySync);
+setInterval(trySync,10000);
+$('#net').onclick=()=>{if(navigator.onLine===false){toast('Still offline. It will upload by itself when you are back online.');return}syncBackoff=0;syncAll(true)};
 addEventListener('pagehide',()=>{saveLocalNow()});
 
 /* ---------- ui helpers ---------- */
@@ -1078,7 +1097,36 @@ $('#offOn').onchange=e=>{
  else{try{localStorage.removeItem('nb_cache')}catch(x){}renderOffline()}
 };
 $('#offClear').onclick=()=>{try{localStorage.removeItem('nb_cache')}catch(x){}renderOffline();toast('Offline copy removed from this device')};
-function renderSet(){renderSetLists();renderOffline()}
+let deferredInstall=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(!$('#v-set').classList.contains('hide'))renderInstall()});
+addEventListener('appinstalled',()=>{deferredInstall=null;toast('Notebook is installed.');renderInstall()});
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+async function installChecks(){
+ const c=[];
+ c.push([location.protocol==='https:'||location.hostname==='localhost',location.protocol==='file:'?'This was opened as a file. Open the website address (https://…) instead.':'It must be opened from its https:// web address.','Opened from a secure web address']);
+ let mf=false,ic=false;
+ try{
+  const l=document.querySelector('link[rel=manifest]'),r=await fetch(l.href,{cache:'no-store'});mf=r.ok;
+  if(mf){const j=await r.json(),sz=(j.icons||[]).map(i=>i.sizes);
+   const got=await Promise.all((j.icons||[]).map(i=>fetch(new URL(i.src,l.href),{cache:'no-store'}).then(x=>x.ok).catch(()=>false)));
+   ic=sz.includes('192x192')&&sz.includes('512x512')&&got.every(Boolean)}
+ }catch(e){}
+ c.push([mf,'Upload manifest.webmanifest into the same folder as index.html.','App manifest found']);
+ c.push([ic,'Upload icon-192.png and icon-512.png into the same folder as index.html.','App icons found']);
+ let sw=false;try{const g=await navigator.serviceWorker.getRegistration();sw=!!(g&&(g.active||g.waiting||g.installing))}catch(e){}
+ c.push([sw,'Upload sw.js into the same folder as index.html, then reload the page twice.','Offline helper (sw.js) running']);
+ return c;
+}
+async function renderInstall(){
+ const btn=$('#instBtn'),list=$('#instList');
+ if(standalone()){btn.classList.add('hide');list.innerHTML='<li>✓ Running as an installed app.</li>';return}
+ btn.classList.toggle('hide',!deferredInstall);
+ const rows=await installChecks(),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+ list.innerHTML=rows.map(([ok,fix,label])=>`<li>${ok?'✓':'✗'} ${esc(label)}${ok?'':'<br><span>'+esc(fix)+'</span>'}</li>`).join('')
+  +(ios?'<li>On iPhone or iPad: tap the Share button, then “Add to Home Screen”.</li>':deferredInstall?'':'<li>No Install button? Open your browser menu and choose “Install app” or “Add to Home screen”.</li>');
+}
+$('#instBtn').onclick=async()=>{if(!deferredInstall)return;deferredInstall.prompt();try{await deferredInstall.userChoice}catch(e){}deferredInstall=null;renderInstall()};
+function renderSet(){renderSetLists();renderOffline();renderInstall()}
 
 function rollDay(){
  const n=ymd(new Date());if(n===TODAY)return;
