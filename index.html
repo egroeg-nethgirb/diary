@@ -343,7 +343,7 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
   <h1>Settings</h1>
   <div class="card set">
     <div class="sech"><h3>Expense categories</h3><button class="pen" type="button" data-tog="catList" aria-label="Show or hide saved categories">✏️</button></div>
-    <p class="mute">Lines that match no keyword go to “Other”. Add your own categories and keywords instead. These sync across your devices.</p>
+    <p class="mute">Categories are picked automatically from the words in each line (for example gcry, tea, bus, rent). Lines that match nothing go to “Other”. Add your own categories and keywords for anything else. These sync across your devices.</p>
     <ul class="chips hide" id="catList"></ul>
     <div class="row"><input id="catIcon" placeholder="🏷️" maxlength="4" style="width:4.5rem"><input id="catName" placeholder="New category, e.g. Pets" style="flex:1;width:auto;min-width:10rem"><button class="btn" id="addCat">Add</button></div>
     <div class="sech" style="margin-top:1.2rem"><h3>Keywords</h3><button class="pen" type="button" data-tog="kwList" aria-label="Show or hide saved keywords">✏️</button></div>
@@ -391,30 +391,48 @@ let TODAY=ymd(new Date());
 
 /* ---------- keyword dictionary ---------- */
 const CATS={
- 'Food':{icon:'☕',color:'#d6a14b',words:['coffee','starbucks','lunch','dinner','breakfast','pizza','burger','restaurant','cafe','tea','snack','grocery','groceries','swiggy','zomato','food','juice','bakery']},
- 'Transportation':{icon:'🚗',color:'#5b8fd1',words:['uber','ola','taxi','cab','bus','metro','train','fuel','petrol','diesel','gas','parking','toll','flight','auto','rickshaw']},
- 'Bills & Utilities':{icon:'💡',color:'#9a86d6',words:['electricity','bill','water','internet','wifi','rent','phone','recharge','insurance','gas bill','broadband','tax']},
- 'Fun':{icon:'🎬',color:'#d77f9c',words:['movie','netflix','spotify','game','concert','cinema','party','bar','pub','hobby','book','music','ticket']},
- 'Shopping':{icon:'🛍️',color:'#4fae98',words:['amazon','shirt','shoes','clothes','flipkart','mall','shopping','gift','jacket','bag']},
- 'Health':{icon:'💊',color:'#d2695c',words:['doctor','pharmacy','medicine','gym','hospital','dentist','clinic','vitamin']},
+ 'Food':{icon:'☕',color:'#d6a14b',words:['five star','snaks','puure','sprit','donut','donuts','coffe','biskut','crice','grice','ckrice','mangobar','bdaycake','avilmilk','poree','railtea','beefporota','beefputt','chocobar','chiking','frypotato','panipuri','kothporota','yeppe','gig','peraka','streetfood','bftea','te','vadapav','jileby','jalebi','popcon','popcorn','dabba','benidosa','rotti','cafelate','galaxyfig','fivestar','annapurna','onne','onnee','feast','soya','banna','bannana','center fresh','tea','chaya','coffee','cafe','cafetea','cafeteria','canteen','lunch','dinner','breakfast','bf','meal','meals','food','snack','snacks','snak','juice','shake','milkshake','sprite','7up','drink','soda','lassi','water','toddy','refreshment','treat',
+  'idli','idly','dosa','dosai','idiyappam','idiyapam','idyapam','appam','putt','puttu','pathiri','poori','pooree','poore','puree','pure','pori','porota','porotta','protta','prota','porta','potta','parotta','chapati','chapathi','roti','kothu','koth','noodle','noodles','biryani','biriyani','briyani','biriyai','cb','vp','fryrice','fry','fried','curry','gravy','sambar','sapad','thali','mandi','manthi','alfam','alfaham','grill','grilled','shavarma','sharma','shawarma','shavai','kunafa','roll','rol','meatroll','sandwich','burger','pizza','kfc','momo','momoes','momos','sev','dal','baji','bajji','kadi','kadala','samosa','puff','puffs','pubs','vada','pav','puri','pulav','omlet','omelette','eggcurry',
+  'chicken','chiken','chick','chik','chikrice','chikushake','beef','beaf','mutton','motton','fish','pork','prawn','kebab',
+  'biscuit','biscuits','biscut','bisct','bisect','biscuitss','bun','cake','icecream','ice cream','cone','kulfi','chocolate','choco','sweet','sweets','laddu','peda','candy','canty','bingo','lays','chips','cips','payasam','payam','payampori','payampoli','fig','galaxy','galxy','glaxy','kpk','kstory','vk','yippee','yeepee','yeppee','maggie','dilkush','cheese','kuliki','laban','soup',
+  'banana','mango','apple','orange','grape','grapes','fruit','fruits','lime','watermelon','water melon','sugar cane','avil milk','banana milk','egg rol','egg roll','beef fry','sprouts']},
+ 'Groceries':{icon:'🛒',color:'#8fb86a',words:['d mart','grocery','groceries','grocry','grcry','gcry','grcy','grcty','grocy','dmart','supermarket','market','kpn','veg','vegi','vegitable','vegetable','vegetables','onion','tomato','cabage','cabbage','cauliflower','beetroot','garlic','potato','carrot','coconut','egg','eggs','curd','yogurt','yoghurt','milk','bread','jam','butter','oil','sugar','salt','atta','aata','arisi','rice','oats','honey','tea powder']},
+ 'Transportation':{icon:'🚗',color:'#5b8fd1',words:['ambernath','thalkal','metro card','bus','busmetro','auto','autos','metro','train','suburban','suburbantrain','cab','taxi','uber','ola','petrol','diesel','fuel','jeep','ticket','tickets','tatkal','ferry','flight','bike','rickshaw','parking','toll','travel','ride','to room','metro recharge']},
+ 'Stay':{icon:'🏠',color:'#c98a5a',words:['room','rent','hostel','homestay','homestayrent','hotel','lodge','oxotel','stay']},
+ 'Bills & Utilities':{icon:'💡',color:'#9a86d6',words:['haritha','meter','vi','electricity','electric','bill','recharge','reacharge','sim','broadband','wifi','internet','hotspot','insurance','gas','cylinder','tax','emi','subscription','postpaid','prepaid']},
+ 'Education':{icon:'🎓',color:'#6aa8c9',words:['pen','exam','fee','fees','tuition','project','report','print','printout','xerox','photostat','copy','cv','book','books','stationery','course','certificate']},
+ 'Personal Care':{icon:'🧴',color:'#b97fc4',words:['shambo','haircut','hair','hiarcut','soap','shampoo','conditioner','trimmer','moisturiser','moisturizer','paste','toothpaste','brush','facewash','razor','perfume','deodorant','salon','lotion']},
+ 'Fun':{icon:'🎬',color:'#d77f9c',words:['isl','pvrmovie','movie','movies','pvr','cinema','theatre','theater','netflix','spotify','game','games','concert','museum','treasure','waterfall','interstellar','kanthara','emputan','minecraft','dhurandhar','jailer','onam fund','onam funds','onam program','farewell fund','freshers fund']},
+ 'Shopping':{icon:'🛍️',color:'#4fae98',words:['white mund','mundu','shirt','tshirt','t-shirt','zudio','pant','pants','shorts','dress','saree','shoe','shoes','chappel','chappal','slippers','belt','bag','umbrella','watch','gloves','banian','blazzer','blazer','jacket','towel','gift','mall','shopping','shoping','purchase','puchase','amazon','flipkart','flip','myntra','uniform','stitching','chair','table','mouse','speaker','laptop','earphones','charger','mirror','utensils','spoon']},
+ 'Health':{icon:'💊',color:'#d2695c',words:['medicine','medicines','medical','doctor','pharmacy','hospital','hospl','clinic','dentist','xray','x-ray','homeopathy','homiyo','vitamin','gym','tablet','tablets','scan','injection','checkup']},
  'Other':{icon:'📦',color:'#8c94a8',words:[]}
 };
+/* when a line matches more than one category, the first in this list wins (so "train food" is Food, "bus to room" is Transportation) */
+const PRIO=['Health','Bills & Utilities','Education','Personal Care','Fun','Shopping','Stay','Food','Transportation','Groceries'];
+const TIMEWORDS=/\b(mrg|morning|noon|eve|evening|ev|ngt|night|aft|afternoon)\b/gi;
 /* older saved data used "Food & Drink" */
 const normCat=c=>c==='Food & Drink'?'Food':c;
 const PALETTE=['#8fb86a','#c98a5a','#6aa8c9','#b59a6a','#5bb3b3','#a98fd1','#d08a8a','#8d9aa8'];
 const SD=()=>store.set.data;
 function allCats(){
  const o={...CATS};
- (SD().custom||[]).forEach((c,i)=>{o[c.name]={icon:c.icon||'🏷️',color:PALETTE[i%PALETTE.length],words:[]}});
+ // a category you added yourself earlier with the same name as a built-in one keeps its icon but uses the built-in words
+ (SD().custom||[]).forEach((c,i)=>{o[c.name]=CATS[c.name]?{...CATS[c.name],icon:c.icon||CATS[c.name].icon}:{icon:c.icon||'🏷️',color:PALETTE[i%PALETTE.length],words:[]}});
  return o;
 }
 const catInfo=n=>allCats()[normCat(n)]||{icon:'📦',color:'#8c94a8'};
-const rx=w=>new RegExp('\\b'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
+const _rx=new Map();
+const rx=w=>{let r=_rx.get(w);if(!r)_rx.set(w,r=new RegExp('\\b'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/ /g,'\\s+')+'\\b','i'));return r};
 function categorize(t){
  const ac=allCats(),uw=SD().words||{};
+ // 1) words you added in Settings always win
  for(const [n0,ws] of Object.entries(uw)){const n=normCat(n0);if(ac[n])for(const w of ws)if(rx(w).test(t))return n}
- for(const [n,c] of Object.entries(ac)) for(const w of c.words) if(rx(w).test(t)) return n;
- return 'Other';
+ // 2) built-in words. Leave out mrg/eve/ngt/noon so "eve auto" is read as "auto"
+ const clean=t.replace(TIMEWORDS,' ').replace(/\s+/g,' ').trim(),timed=clean!==t.trim().replace(/\s+/g,' ');
+ if(!clean)return timed&&ac.Food?'Food':'Other';
+ const order=[...PRIO,...Object.keys(ac).filter(n=>!PRIO.includes(n)&&n!=='Other')].filter(n=>ac[n]);
+ for(const phrase of [true,false])for(const n of order)for(const w of ac[n].words)if(w.includes(' ')===phrase&&rx(w).test(clean))return(timed&&n==='Groceries'&&ac.Food)?'Food':n; // "noon rice" is a meal, "rice" is a grocery
+ return timed?'Food':'Other'; // a meal-time word with nothing else is almost always a meal
 }
 function toNum(t){
  return /^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)?parseFloat(t.replace(/,/g,'')):parseFloat(t.replace(',','.'));
@@ -1076,7 +1094,7 @@ function renderSetLists(){
  const ac=allCats(),sd=SD(),names=Object.keys(ac),custom=sd.custom||[];
  const opts=names.map(n=>`<option>${esc(n)}</option>`).join('');
  $('#kwCat').innerHTML=opts;$('#shCat').innerHTML='<option value="auto">Auto</option>'+opts;
- $('#catList').innerHTML=names.map(n=>`<li>${ac[n].icon} ${esc(n)}${custom.some(c=>c.name===n)?`<button data-delcat="${esc(n)}" aria-label="Remove ${esc(n)}">✕</button>`:''}</li>`).join('');
+ $('#catList').innerHTML=names.map(n=>`<li>${ac[n].icon} ${esc(n)}${custom.some(c=>c.name===n)&&!CATS[n]?`<button data-delcat="${esc(n)}" aria-label="Remove ${esc(n)}">✕</button>`:''}</li>`).join('');
  $('#kwList').innerHTML=Object.entries(sd.words||{}).flatMap(([c,ws])=>ws.map(w=>`<li>${esc(w)} → ${esc(normCat(c))}<button data-delkw="${encodeURIComponent(c)}|${encodeURIComponent(w)}" aria-label="Remove">✕</button></li>`)).join('')||'<li class="mute">None yet</li>';
  $('#shList').innerHTML=(sd.shorts||[]).map(x=>`<li><b>${esc(x.k)}</b>&nbsp;→ ${esc(x.text)}${x.cat&&x.cat!=='auto'?' ('+esc(normCat(x.cat))+')':''}<button data-delsh="${esc(x.k)}" aria-label="Remove">✕</button></li>`).join('')||'<li class="mute">None yet</li>';
 }

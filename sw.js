@@ -1,6 +1,6 @@
 /* Notebook: keeps the page shell and fonts so the app opens without internet.
    Your notes are never cached here (they live encrypted in the app's own offline copy). */
-const V='nb-v3',SHELL=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png'];
+const V='nb-v4',SHELL=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>e.waitUntil((async()=>{
  const c=await caches.open(V);
  await Promise.all(SHELL.map(u=>c.add(u).catch(()=>{})));
