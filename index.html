@@ -131,6 +131,25 @@ td button:hover{color:var(--bad)}
 .leg{list-style:none;margin:0;padding:0}
 .leg li{display:flex;gap:.5rem;align-items:center;margin:.2rem 0}
 .leg s{width:12px;height:12px;border-radius:4px;display:inline-block}
+.leg li[data-cat],#pie.has{cursor:pointer}
+.leg li[data-cat]{padding:.15rem .4rem;margin:.05rem -.4rem;border-radius:12px}
+.leg li[data-cat]:focus-visible{outline:2px solid var(--acc)}
+@media(hover:hover){.leg li[data-cat]:hover{background:var(--acc2)}}
+#catPop{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:1rem 1rem calc(5.5rem + env(safe-area-inset-bottom));background:rgba(8,10,20,.45)}
+#catPop .box{width:100%;max-width:360px;max-height:min(70vh,520px);display:flex;flex-direction:column;padding:1rem 1.1rem;border-radius:26px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow);animation:pop .22s cubic-bezier(.3,1.3,.5,1)}
+#catPop header{display:flex;align-items:flex-start;justify-content:space-between;gap:.6rem;margin-bottom:.5rem}
+#catPop h4{margin:0;font:500 1.15rem var(--serif);line-height:1.25}
+#catPop .sub{display:block;margin-top:.15rem}
+#catPop .x{flex:none;width:36px;height:36px;min-height:36px;padding:0;border-radius:50%;background:var(--glass-in);border:1px solid var(--line);color:var(--ink);line-height:1}
+#catPop ul{list-style:none;margin:0;padding:0;overflow-y:auto;overscroll-behavior:contain}
+#catPop li{padding:.45rem 0;border-bottom:1px solid var(--line)}
+#catPop li:last-child{border-bottom:0}
+#catPop .r{display:flex;justify-content:space-between;gap:.8rem;font-variant-numeric:tabular-nums lining-nums}
+#catPop .r span:first-child{min-width:0;overflow-wrap:anywhere}
+#catPop .r b{font-weight:600;white-space:nowrap}
+#catPop .bar{height:5px;margin-top:.3rem;border-radius:3px;background:var(--acc2);overflow:hidden}
+#catPop .bar i{display:block;height:100%;border-radius:3px;background:var(--c,var(--acc))}
+#catPop .n{font-weight:400;color:var(--mute);font-size:.82rem}
 #toast{position:fixed;bottom:1.2rem;right:1.2rem;max-width:80vw;padding:.6rem 1rem;background:rgba(18,20,34,.86);color:#f4eddd;border:1px solid rgba(226,196,135,.3);border-radius:18px;opacity:0;transform:translateY(10px);pointer-events:none;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 #toast.show{opacity:1;transform:none}
 #toast.err{background:rgba(176,58,46,.92);color:#fff}
@@ -380,6 +399,7 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
 </section>
 
 </main>
+<div id="catPop" class="hide" role="dialog" aria-modal="true" aria-labelledby="cpT"><div class="box"><header><div><h4 id="cpT"></h4><span class="mute sub" id="cpS"></span></div><button type="button" class="x" id="cpX" aria-label="Close">✕</button></header><ul id="cpL"></ul></div></div>
 <div id="toast" role="status"></div>
 
 <script>
@@ -737,7 +757,7 @@ addEventListener('pagehide',()=>{saveLocalNow()});
 /* ---------- ui helpers ---------- */
 let tt;
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(tt);tt=setTimeout(()=>t.className='',3500)}
-function show(v){flushNote();flushExp();if(v==='dash')_cnt=new WeakMap();
+function show(v){flushNote();flushExp();$('#catPop').classList.add('hide');if(v==='dash')_cnt=new WeakMap();
  ['diary','exp','dash','set'].forEach(k=>$('#v-'+k).classList.toggle('hide',k!==v));
  $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
  render();
@@ -989,7 +1009,8 @@ function renderDash(){
  const ent=Object.entries(by).filter(e=>e[1]>0).sort((p,q)=>q[1]-p[1]);let acc=0;const tot=ent.reduce((t,e)=>t+e[1],0);
  const stops=ent.map(([c,v])=>{const st=acc/tot*100;acc+=v;return `${catInfo(c).color} ${st}% ${acc/tot*100}%`});
  $('#pie').style.background=ent.length?`conic-gradient(${stops.join(',')})`:'var(--line)';
- $('#leg').innerHTML=ent.length?ent.map(([c,v])=>`<li><s style="background:${catInfo(c).color}"></s>${catInfo(c).icon} ${esc(c)}: ${money(v)} <span class="mute">(${Math.round(v/tot*100)}%)</span></li>`).join(''):'<li class="mute">No data for this period.</li>';
+ $('#pie').classList.toggle('has',ent.length>0);dashEx=ex;pieEnt=ent;
+ $('#leg').innerHTML=ent.length?ent.map(([c,v])=>`<li data-cat="${encodeURIComponent(c)}" tabindex="0" role="button" aria-label="Show what is in ${esc(c)}"><s style="background:${catInfo(c).color}"></s>${catInfo(c).icon} ${esc(c)}: ${money(v)} <span class="mute">(${Math.round(v/tot*100)}%)</span></li>`).join(''):'<li class="mute">No data for this period.</li>';
  renderBars();setPage(dpage);
 }
 $('#seg').onclick=e=>{const b=e.target.closest('[data-m]');if(b){dmode=b.dataset.m;brkLimit=7;renderDash()}};
@@ -1088,6 +1109,41 @@ $('#bchips').onclick=e=>{
  renderBars();
 };
 {let rz;addEventListener('resize',()=>{cancelAnimationFrame(rz);rz=requestAnimationFrame(()=>{if(!$('#v-dash').classList.contains('hide')){renderBars();fitPager()}})})}
+
+/* ---------- click a category: small popup with every item name and its total ---------- */
+let dashEx=[],pieEnt=[];
+function openCat(cat){
+ const rows=new Map();let tot=0;
+ dashEx.forEach(x=>{
+  if(normCat(x.cat)!==cat)return;
+  let k=(x.text||'').replace(TIMEWORDS,' ').replace(/\s+/g,' ').trim().toLowerCase()||'meal';
+  let r=rows.get(k);if(!r)rows.set(k,r={name:k,sum:0,n:0});
+  r.sum+=x.amount;r.n++;tot+=x.amount;
+ });
+ const list=[...rows.values()].sort((a,b)=>b.sum-a.sum),max=list.length?list[0].sum:1,info=catInfo(cat);
+ $('#cpT').textContent=info.icon+' '+cat+' · '+money(tot);
+ $('#cpS').textContent=$('#dlab').textContent+' · '+list.length+' item'+(list.length===1?'':'s');
+ $('#cpL').innerHTML=list.map(r=>`<li><div class="r"><span>${esc(r.name.charAt(0).toUpperCase()+r.name.slice(1))}${r.n>1?` <span class="n">×${r.n}</span>`:''}</span><b>${money(r.sum)}</b></div><div class="bar" style="--c:${info.color}"><i style="width:${Math.max(3,r.sum/max*100)}%"></i></div></li>`).join('')||'<li class="mute">Nothing here.</li>';
+ $('#cpL').scrollTop=0;
+ $('#catPop').classList.remove('hide');
+ $('#cpX').focus();
+}
+function closeCat(){$('#catPop').classList.add('hide')}
+$('#cpX').onclick=closeCat;
+$('#catPop').addEventListener('click',e=>{if(e.target.id==='catPop')closeCat()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#catPop').classList.contains('hide'))closeCat()});
+$('#leg').addEventListener('click',e=>{const li=e.target.closest('[data-cat]');if(li)openCat(decodeURIComponent(li.dataset.cat))});
+$('#leg').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const li=e.target.closest('[data-cat]');if(li){e.preventDefault();openCat(decodeURIComponent(li.dataset.cat))}});
+/* tapping a slice of the ring: work out which slice from the angle (the hole in the middle does nothing) */
+$('#pie').addEventListener('click',e=>{
+ if(!pieEnt.length)return;
+ const r=e.currentTarget.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),rad=Math.hypot(dx,dy)/(r.width/2);
+ if(rad>1||rad<.58)return;
+ let a=Math.atan2(dx,-dy)/(2*Math.PI);if(a<0)a+=1; // 0 at the top, clockwise, like conic-gradient
+ const tot=pieEnt.reduce((t,x)=>t+x[1],0);let acc=0;
+ for(const [c,v] of pieEnt){acc+=v/tot;if(a<=acc+1e-9){openCat(c);return}}
+ openCat(pieEnt[pieEnt.length-1][0]);
+});
 
 /* ---------- settings: categories, keywords, short forms ---------- */
 function renderSetLists(){
