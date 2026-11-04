@@ -35,7 +35,7 @@ body::before{width:46vmax;height:46vmax;left:-12vmax;top:-10vmax;background:radi
 body::after{width:50vmax;height:50vmax;right:-14vmax;bottom:-16vmax;background:radial-gradient(circle,var(--b2),transparent 70%)}
 ::selection{background:rgba(214,179,106,.35)}
 h1,h2,h3{font-family:var(--serif);font-weight:500;margin:0 0 .5rem}
-h1{font-size:2.15rem;line-height:1.1;letter-spacing:.005em;margin-bottom:1rem;padding-right:3.5rem}
+h1{font-size:2.15rem;line-height:1.1;letter-spacing:.005em;margin-bottom:1rem;padding-right:6.5rem}
 .card h3{font:600 .74rem var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--acc)}
 #dlabel,#elabel{font:500 1.3rem var(--serif);letter-spacing:0;text-transform:none;color:var(--ink)}
 #dlabel{margin-bottom:.25rem}
@@ -64,7 +64,8 @@ main{position:relative;flex:1;min-width:0;max-width:960px;padding:2rem}
 .sech{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
 .sech h3{margin:0}
 .themebtn{position:absolute;top:2rem;right:2rem;z-index:2;width:44px;height:44px;padding:0;border-radius:50%;font-size:1.2rem}
-.netpill{position:absolute;top:2.1rem;right:5rem;z-index:2;padding:.4rem .9rem;border-radius:999px;background:var(--warn);border:1px solid var(--line);font-size:.85rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lockBtn{right:5.15rem}
+.netpill{position:absolute;top:2.1rem;right:8.3rem;z-index:2;padding:.4rem .9rem;border-radius:999px;background:var(--warn);border:1px solid var(--line);font-size:.85rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .netpill.sync{animation:pulse 1.4s ease-in-out infinite}
 .banner{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:1rem;padding:.6rem 1rem;background:var(--warn);color:var(--ink);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:20px}
 .banner span{cursor:pointer}
@@ -268,7 +269,8 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
  main{padding:1rem 1rem calc(104px + env(safe-area-inset-bottom));max-width:none}
  h1{font-size:1.85rem}
  .themebtn{top:1rem;right:1rem}
- .netpill{top:1.15rem;right:4.3rem;max-width:calc(100vw - 6.4rem);font-size:.75rem;padding:.3rem .65rem}
+ #lockBtn{right:4.15rem}
+ .netpill{top:1.15rem;right:7.5rem;max-width:calc(100vw - 9.6rem);font-size:.75rem;padding:.3rem .65rem}
  .netpill .x{display:none}
  .card{padding:1rem}
  .stats{gap:.4rem}
@@ -306,6 +308,7 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
 </nav>
 <main>
 
+<button class="themebtn" id="lockBtn" type="button" aria-label="Lock now" title="Lock now"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
 <button class="themebtn" id="themeBtn" type="button" aria-label="Switch between dark and light mode"></button>
 <div id="net" class="netpill hide" role="status"></div>
 
@@ -395,7 +398,7 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
     <div class="row"><button class="btn ghost" id="offClear" type="button">Remove offline copy</button></div>
     <p class="mute" id="offSt" role="status"></p>
   </div>
-  <p class="mute" style="margin-top:1rem">Your token and password are never saved. Only an encrypted copy of your notes can stay on this device, and you can turn that off above. The app logs out after 15 minutes of inactivity.</p>
+  <p class="mute" style="margin-top:1rem">Your password is never saved. An encrypted copy of your notes, with your token inside it, can stay on this device, so next time only the password is needed (you can turn that off above). The app locks after 30 minutes of inactivity, or at once with the padlock button. If you close the window by accident you can come straight back for 10 minutes.</p>
 </section>
 
 </main>
@@ -663,6 +666,7 @@ function buildPayload(){
   }
  }
  p.set={data:store.set.data,base:store.set.base,sha:store.set.sha};
+ p.tok=cfg.tok||''; // lets the next sign-in on this device ask for the password only
  return JSON.stringify(p);
 }
 async function writeCache(json,sh){
@@ -717,7 +721,7 @@ async function recoverPending(pw){
  return n>0;
 }
 /* back online: merge what others changed, then upload what we changed */
-function syncAll(force){
+function syncAll(force,quiet){
  if(syncing||!loaded||!cfg.tok||(!force&&Date.now()<syncBackoff))return Promise.resolve();
  syncing=true;updateNet();
  return enqueue(async()=>{
@@ -733,7 +737,7 @@ function syncAll(force){
   }
   await mergeRemote(store.set,true);
   if(JSON.stringify(store.set.data)!==store.set.base)await pushNow(store.set,'Sync settings');
- }).then(()=>{offlineMode=false;pendingSync=false;syncBackoff=0;saveLocalSoon();render();toast('Everything is uploaded and up to date.')})
+ }).then(()=>{offlineMode=false;pendingSync=false;syncBackoff=0;saveLocalSoon();render();if(!quiet)toast('Everything is uploaded and up to date.')})
   .catch(e=>{if(!isNetErr(e)){syncBackoff=Date.now()+120000;toast('Upload problem: '+e.message,1)}})
   .finally(()=>{syncing=false;updateNet()});
 }
@@ -1256,17 +1260,51 @@ $('#impGo').onclick=async()=>{
 };
 
 /* ---------- login, lock, theme ---------- */
-let idleT;
-function idle(){clearTimeout(idleT);idleT=setTimeout(()=>{lock();$('#lockErr').textContent='Locked after 15 minutes of inactivity.'},15*60e3)}
-['click','keydown'].forEach(ev=>document.addEventListener(ev,()=>{if(loaded)idle()}));
+const IDLE_MS=30*60e3,QR_MS=10*60e3;
+let idleT,lastAct=Date.now();
+function idle(){clearTimeout(idleT);lastAct=Date.now();idleT=setTimeout(()=>{lock();$('#lockErr').textContent='Locked after 30 minutes of inactivity.'},IDLE_MS)}
+['click','pointerdown','touchstart','keydown','input','scroll','wheel'].forEach(ev=>document.addEventListener(ev,()=>{if(!loaded||Date.now()-lastAct<1000)return;idle();qrTouch()},{passive:true,capture:true}));
+/* phones pause timers while asleep, so check again when the page comes back */
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&loaded&&Date.now()-lastAct>IDLE_MS){lock();$('#lockErr').textContent='Locked after 30 minutes of inactivity.'}});
+
+/* ---------- quick return: after an accidental close, come back without typing for 10 minutes ----------
+   The password and token are kept only as an encrypted blob. Its key is a non-extractable key in this browser's own storage,
+   the blob stops working 10 minutes after your last activity, and locking by hand, or after 30 idle minutes, deletes it. */
+const qrOpen=()=>new Promise((res,rej)=>{const r=indexedDB.open('nb_resume',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function qrTx(mode,fn){const db=await qrOpen();return new Promise((res,rej)=>{const t=db.transaction('k',mode),q=fn(t.objectStore('k'));t.oncomplete=()=>{db.close();res(q&&q.result)};t.onerror=t.onabort=()=>{db.close();rej(t.error)}})}
+function qrTouch(){try{localStorage.setItem('nb_qr_exp',String(Date.now()+QR_MS))}catch(e){}}
+function qrClear(){try{localStorage.removeItem('nb_qr_exp')}catch(e){}try{qrTx('readwrite',s=>s.clear()).catch(()=>{})}catch(e){}}
+async function qrSave(pw,tok){
+ try{
+  const key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']),iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify({pw,tok})));
+  await qrTx('readwrite',s=>s.put({key,iv,ct},'s'));
+  if(loaded)qrTouch();else qrClear(); // locked while this was saving
+ }catch(e){}
+}
+async function autoResume(){
+ try{
+  const exp=+localStorage.getItem('nb_qr_exp')||0;
+  if(!exp)return;
+  if(Date.now()>exp){qrClear();return}
+  const rec=await qrTx('readonly',s=>s.get('s'));if(!rec)return;
+  const o=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:rec.iv},rec.key,rec.ct)));
+  $('#fTok').value=o.tok||'';$('#fPw').value=o.pw;
+  await $('#lockForm').onsubmit({preventDefault(){}});
+ }catch(e){}
+ if(document.body.classList.contains('locked')){qrClear();['#fTok','#fPw'].forEach(i=>$(i).value='');$('#lockErr').textContent=''}
+}
 function lock(){
+ qrClear();
  const lp=loaded&&shared&&localOn()?buildPayload():null,lsh=shared;
  if(lp)writeCache(lp,lsh);
  clearTimeout(idleT);noteDirty=false;store=fresh();keyCache=new Map();shared=null;cfg.tok='';loaded=false;offlineMode=false;pendingSync=false;updateNet();
  document.body.classList.add('locked');$('#lock').classList.remove('hide');
  ['#fTok','#fPw','#fCfm'].forEach(i=>$(i).value='');
  $('#cfmWrap').classList.add('hide');$('#lockErr').textContent='';
+ tokHint(!!lp);
 }
+function tokHint(has){$('#fTok').placeholder=(has||(localOn()&&readCache()))?'Username (not needed again on this device)':'Username'}
 
 function enter(){
  $('#lock').classList.add('hide');document.body.classList.remove('locked');
@@ -1278,10 +1316,21 @@ $('#lockForm').onsubmit=async e=>{
  const err=$('#lockErr'),btn=$('#unlockBtn'),pw=$('#fPw').value;
  err.textContent='';keyCache=new Map();shared=null;
  Object.assign(cfg,REPO);cfg.tok=$('#fTok').value.trim();
- if(!cfg.tok||!pw){err.textContent='Enter your username and password.';return}
+ if(!pw||(!cfg.tok&&!(localOn()&&readCache()))){err.textContent='Enter your username and password.';return}
  saveCfgLocal();btn.disabled=true;btn.textContent='Unlocking…';
  try{
   store=fresh();
+  /* fast path: this device already has an encrypted copy. If the password opens it, show it now and bring the latest in behind the scenes */
+  if(localOn()&&readCache()){
+   const o=await openCache(pw);
+   if(o&&o!=='wrong'&&(cfg.tok||o.p.tok)){
+    if(!cfg.tok)cfg.tok=o.p.tok;
+    shared={salt:o.salt,key:o.key};restoreFrom(o.p);loaded=true;pendingSync=true;
+    enter();saveLocalSoon();qrSave(pw,cfg.tok);syncAll(true,true);
+    btn.disabled=false;btn.textContent='Unlock';return;
+   }
+   if(!cfg.tok){err.textContent=o==='wrong'?'Wrong password.':'Enter your username too.';btn.disabled=false;btn.textContent='Unlock';return}
+  }
   await pull(store.set,pw);
   const ex=await Promise.all(KINDS.map(k=>loadKind(k,pw,!!store.set.data.sharded)));
   const cfm=$('#fCfm').value, cfmShown=!$('#cfmWrap').classList.contains('hide');
@@ -1298,13 +1347,13 @@ $('#lockForm').onsubmit=async e=>{
    loaded=true;
    try{await migrate()}
    catch(e){lock();$('#lockErr').textContent='Storage upgrade did not finish. Nothing was lost, please try again. ('+e.message+')';btn.disabled=false;btn.textContent='Unlock';return}
-   enter();saveLocalSoon();
+   enter();saveLocalSoon();qrSave(pw,cfg.tok);
    if(rec){pendingSync=true;updateNet();syncAll()}
   }
  }catch(ex){
   if(isNetErr(ex)){
    const r=await offlineUnlock(pw);
-   if(r==='ok'){enter();toast('No internet: working from the copy saved on this device.')}
+   if(r==='ok'){enter();qrSave(pw,cfg.tok);toast('No internet: working from the copy saved on this device.')}
    else if(r==='wrong')err.textContent='Wrong password.';
    else err.textContent='No internet connection, and this device has no offline copy yet. Connect once and log in to set it up.';
   }else err.textContent=ex.message==='WRONG_PW'?'Wrong password.':ex.message;
@@ -1322,6 +1371,7 @@ function applyTheme(){
  $('#themeBtn').title=dark?'Switch to light mode':'Switch to dark mode';
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
+$('#lockBtn').onclick=()=>lock();
 $('#themeBtn').onclick=()=>{try{localStorage.setItem('nb_theme',isDark()?'light':'dark')}catch(x){}applyTheme()};
 applyTheme();
 function renderOffline(){
@@ -1383,6 +1433,8 @@ addEventListener('focus',rollDay);
 
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
 
+tokHint();
+autoResume();
 function render(){
  const v=['diary','exp','dash','set'].find(k=>!$('#v-'+k).classList.contains('hide'));
  if(v==='diary')renderDiary();
