@@ -155,9 +155,6 @@ td button:hover{color:var(--bad)}
 #toast.show{opacity:1;transform:none}
 #toast.err{background:rgba(176,58,46,.92);color:#fff}
 
-#instList{list-style:none;margin:.8rem 0 0;padding:0;font-size:.88rem;color:var(--mute)}
-#instList li{margin:.35rem 0}
-#instList span{opacity:.85}
 .netpill{cursor:pointer}
 /* login */
 #lock{position:fixed;inset:0;display:flex;padding:1rem;z-index:10;overflow:auto;color:#f4eddd;font-family:var(--sans);background:radial-gradient(55% 45% at 50% 10%,rgba(214,179,106,.3),transparent 70%),radial-gradient(60% 55% at 92% 88%,rgba(60,84,170,.6),transparent 70%),radial-gradient(55% 45% at 10% 85%,rgba(125,90,45,.38),transparent 70%),radial-gradient(50% 50% at 92% 8%,rgba(30,40,100,.75),transparent 70%),#090b14}
@@ -383,10 +380,8 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
     <div class="row"><button class="btn" id="impGo">Import</button></div>
     <p class="mute" id="impSt" role="status"></p>
   </div>
-  <div class="card set" style="margin-top:1rem">
-    <h3>Install app</h3>
-    <div class="row"><button class="btn hide" id="instBtn" type="button">Install app</button></div>
-    <ul id="instList" role="status"></ul>
+  <div class="card set hide" id="instCard" style="margin-top:1rem">
+    <div class="row" style="margin:0"><button class="btn" id="instBtn" type="button">Install app</button></div>
   </div>
   <div class="card set" style="margin-top:1rem">
     <h3>Offline use</h3>
@@ -1383,30 +1378,7 @@ let deferredInstall=null;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(!$('#v-set').classList.contains('hide'))renderInstall()});
 addEventListener('appinstalled',()=>{deferredInstall=null;toast('Notebook is installed.');renderInstall()});
 const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-async function installChecks(){
- const c=[];
- c.push([location.protocol==='https:'||location.hostname==='localhost',location.protocol==='file:'?'This was opened as a file. Open the website address (https://…) instead.':'It must be opened from its https:// web address.','Opened from a secure web address']);
- let mf=false,ic=false;
- try{
-  const l=document.querySelector('link[rel=manifest]'),r=await fetch(l.href,{cache:'no-store'});mf=r.ok;
-  if(mf){const j=await r.json(),sz=(j.icons||[]).map(i=>i.sizes);
-   const got=await Promise.all((j.icons||[]).map(i=>fetch(new URL(i.src,l.href),{cache:'no-store'}).then(x=>x.ok).catch(()=>false)));
-   ic=sz.includes('192x192')&&sz.includes('512x512')&&got.every(Boolean)}
- }catch(e){}
- c.push([mf,'Upload manifest.webmanifest into the same folder as index.html.','App manifest found']);
- c.push([ic,'Upload icon-192.png and icon-512.png into the same folder as index.html.','App icons found']);
- let sw=false;try{const g=await navigator.serviceWorker.getRegistration();sw=!!(g&&(g.active||g.waiting||g.installing))}catch(e){}
- c.push([sw,'Upload sw.js into the same folder as index.html, then reload the page twice.','Offline helper (sw.js) running']);
- return c;
-}
-async function renderInstall(){
- const btn=$('#instBtn'),list=$('#instList');
- if(standalone()){btn.classList.add('hide');list.innerHTML='<li>✓ Running as an installed app.</li>';return}
- btn.classList.toggle('hide',!deferredInstall);
- const rows=await installChecks(),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
- list.innerHTML=rows.map(([ok,fix,label])=>`<li>${ok?'✓':'✗'} ${esc(label)}${ok?'':'<br><span>'+esc(fix)+'</span>'}</li>`).join('')
-  +(ios?'<li>On iPhone or iPad: tap the Share button, then “Add to Home Screen”.</li>':deferredInstall?'':'<li>No Install button? Open your browser menu and choose “Install app” or “Add to Home screen”.</li>');
-}
+function renderInstall(){$('#instCard').classList.toggle('hide',standalone()||!deferredInstall)}
 $('#instBtn').onclick=async()=>{if(!deferredInstall)return;deferredInstall.prompt();try{await deferredInstall.userChoice}catch(e){}deferredInstall=null;renderInstall()};
 function renderSet(){renderSetLists();renderOffline();renderInstall()}
 
