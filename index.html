@@ -365,7 +365,6 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
   <h1>Settings</h1>
   <div class="card set">
     <div class="sech"><h3>Expense categories</h3><button class="pen" type="button" data-tog="catList" aria-label="Show or hide saved categories">✏️</button></div>
-    <p class="mute">Categories are picked automatically from the words in each line (for example gcry, tea, bus, rent). Lines that match nothing go to “Other”. Add your own categories and keywords for anything else. These sync across your devices.</p>
     <ul class="chips hide" id="catList"></ul>
     <div class="row"><input id="catIcon" placeholder="🏷️" maxlength="4" style="width:4.5rem"><input id="catName" placeholder="New category, e.g. Pets" style="flex:1;width:auto;min-width:10rem"><button class="btn" id="addCat">Add</button></div>
     <div class="sech" style="margin-top:1.2rem"><h3>Keywords</h3><button class="pen" type="button" data-tog="kwList" aria-label="Show or hide saved keywords">✏️</button></div>
@@ -374,7 +373,6 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
   </div>
   <div class="card set" style="margin-top:1rem">
     <div class="sech"><h3>Short forms</h3><button class="pen" type="button" data-tog="shList" aria-label="Show or hide saved short forms">✏️</button></div>
-    <p class="mute">Type the short form, get the full text. With “sb” saved as “Starbucks coffee”, typing “sb 6” works like “Starbucks coffee 6”.</p>
     <ul class="chips hide" id="shList"></ul>
     <div class="row"><input id="shKey" placeholder="Short, e.g. sb" style="width:7rem" autocapitalize="off"><input id="shText" placeholder="Full text" style="flex:1;width:auto;min-width:9rem"><select id="shCat"></select><button class="btn" id="addSh">Add</button></div>
   </div>
@@ -387,18 +385,15 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
   </div>
   <div class="card set" style="margin-top:1rem">
     <h3>Install app</h3>
-    <p class="mute">Install Notebook on this device so it opens like an app, even without internet.</p>
     <div class="row"><button class="btn hide" id="instBtn" type="button">Install app</button></div>
     <ul id="instList" role="status"></ul>
   </div>
   <div class="card set" style="margin-top:1rem">
     <h3>Offline use</h3>
-    <p class="mute">Keeps an encrypted copy of your notebook on this device, so you can open it and write without internet. Anything you add offline uploads by itself when you are back online.</p>
     <label class="chk"><input type="checkbox" id="offOn"> Keep an offline copy on this device</label>
     <div class="row"><button class="btn ghost" id="offClear" type="button">Remove offline copy</button></div>
     <p class="mute" id="offSt" role="status"></p>
   </div>
-  <p class="mute" style="margin-top:1rem">Your password is never saved. An encrypted copy of your notes, with your token inside it, can stay on this device, so next time only the password is needed (you can turn that off above). The app locks after 30 minutes of inactivity, or at once with the padlock button. If you close the window by accident you can come straight back for 10 minutes.</p>
 </section>
 
 </main>
