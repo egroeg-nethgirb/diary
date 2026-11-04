@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Notebook">
 <title>Notebook</title>
+<script>try{if(+localStorage.getItem("nb_qr_exp")>Date.now())document.documentElement.className="resuming"}catch(e){}</script>
 <script>try{var t=localStorage.getItem("nb_theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -157,6 +158,16 @@ td button:hover{color:var(--bad)}
 
 .netpill{cursor:pointer}
 /* login */
+/* quick return: show only the logo while the app opens behind it, then fade into the app */
+html.resuming #lockForm>:not(.avatar):not(h1){display:none}
+html.resuming #lockForm{background:none;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+html.resuming .avatar{animation:breathe 1.7s ease-in-out infinite}
+html.resuming #lockForm::after{content:"";display:block;height:2px;width:44%;margin:1.5rem auto .6rem;border-radius:2px;background:var(--gold);animation:sweep 1.3s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1);box-shadow:inset 0 0 0 1px rgba(226,196,135,.25),0 0 0 0 rgba(226,196,135,0)}50%{transform:scale(1.05);box-shadow:inset 0 0 0 1px rgba(226,196,135,.5),0 0 0 16px rgba(226,196,135,.09)}}
+@keyframes sweep{0%{transform:translateX(-55%) scaleX(.35);opacity:.15}50%{opacity:1}100%{transform:translateX(55%) scaleX(.35);opacity:.15}}
+#lock{transition:opacity .32s ease}
+#lock.leave{opacity:0;pointer-events:none}
+#lockForm{animation:rise .35s cubic-bezier(.2,.7,.2,1) backwards}
 #lock{position:fixed;inset:0;display:flex;padding:1rem;z-index:10;overflow:auto;color:#f4eddd;font-family:var(--sans);background:radial-gradient(55% 45% at 50% 10%,rgba(214,179,106,.3),transparent 70%),radial-gradient(60% 55% at 92% 88%,rgba(60,84,170,.6),transparent 70%),radial-gradient(55% 45% at 10% 85%,rgba(125,90,45,.38),transparent 70%),radial-gradient(50% 50% at 92% 8%,rgba(30,40,100,.75),transparent 70%),#090b14}
 body.locked nav,body.locked main{display:none}
 #lockForm{width:100%;max-width:380px;margin:auto;padding:2rem 2rem 1.8rem;border-radius:44px;background:linear-gradient(160deg,rgba(255,250,235,.15),rgba(255,250,235,.04));border:1px solid rgba(226,196,135,.3);-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);box-shadow:0 30px 60px -20px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,244,214,.3);animation:rise .55s cubic-bezier(.2,.7,.2,1)}
@@ -1275,14 +1286,20 @@ async function qrSave(pw,tok){
 async function autoResume(){
  try{
   const exp=+localStorage.getItem('nb_qr_exp')||0;
-  if(!exp)return;
-  if(Date.now()>exp){qrClear();return}
-  const rec=await qrTx('readonly',s=>s.get('s'));if(!rec)return;
-  const o=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:rec.iv},rec.key,rec.ct)));
-  $('#fTok').value=o.tok||'';$('#fPw').value=o.pw;
-  await $('#lockForm').onsubmit({preventDefault(){}});
+  if(exp&&Date.now()>exp)qrClear();
+  else if(exp){
+   const rec=await qrTx('readonly',s=>s.get('s'));
+   if(rec){
+    const o=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:rec.iv},rec.key,rec.ct)));
+    $('#fTok').value=o.tok||'';$('#fPw').value=o.pw;
+    await $('#lockForm').onsubmit({preventDefault(){}});
+   }
+  }
  }catch(e){}
- if(document.body.classList.contains('locked')){qrClear();['#fTok','#fPw'].forEach(i=>$(i).value='');$('#lockErr').textContent=''}
+ if(document.body.classList.contains('locked')){ // did not get in: show the normal login form
+  qrClear();['#fTok','#fPw'].forEach(i=>$(i).value='');$('#lockErr').textContent='';
+  document.documentElement.classList.remove('resuming');
+ }
 }
 function lock(){
  qrClear();
@@ -1292,12 +1309,14 @@ function lock(){
  document.body.classList.add('locked');$('#lock').classList.remove('hide');
  ['#fTok','#fPw','#fCfm'].forEach(i=>$(i).value='');
  $('#cfmWrap').classList.add('hide');$('#lockErr').textContent='';
- tokHint(!!lp);
 }
-function tokHint(has){$('#fTok').placeholder=(has||(localOn()&&readCache()))?'Username (not needed again on this device)':'Username'}
 
 function enter(){
- $('#lock').classList.add('hide');document.body.classList.remove('locked');
+ const L=$('#lock');
+ const R=document.documentElement.classList;
+ if(R.contains('resuming')&&!RM()){L.classList.add('leave');setTimeout(()=>{L.classList.add('hide');L.classList.remove('leave');R.remove('resuming')},330)} // fade out, keeping only the logo on screen meanwhile
+ else{L.classList.add('hide');R.remove('resuming')}
+ document.body.classList.remove('locked');
  ['#fTok','#fPw','#fCfm'].forEach(i=>$(i).value='');
  show('diary');idle();updateNet();
 }
@@ -1400,7 +1419,6 @@ addEventListener('focus',rollDay);
 
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
 
-tokHint();
 autoResume();
 function render(){
  const v=['diary','exp','dash','set'].find(k=>!$('#v-'+k).classList.contains('hide'));
