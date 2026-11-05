@@ -1269,19 +1269,32 @@ function idle(){clearTimeout(idleT);lastAct=Date.now();idleT=setTimeout(()=>{loc
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&loaded&&Date.now()-lastAct>IDLE_MS){lock();$('#lockErr').textContent='Locked after 30 minutes of inactivity.'}});
 
 /* ---------- quick return: after an accidental close, come back without typing for 10 minutes ----------
-   The password and token are kept only as an encrypted blob. Its key is a non-extractable key in this browser's own storage,
-   the blob stops working 10 minutes after your last activity, and locking by hand, or after 30 idle minutes, deletes it. */
+   The password is NOT kept. What is kept is the already-worked-out key to the encrypted copy on this device (a non-extractable key)
+   and the token (encrypted). It stops working 10 minutes after your last activity, and locking by hand, or after 30 idle minutes, deletes it. */
 const qrOpen=()=>new Promise((res,rej)=>{const r=indexedDB.open('nb_resume',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 async function qrTx(mode,fn){const db=await qrOpen();return new Promise((res,rej)=>{const t=db.transaction('k',mode),q=fn(t.objectStore('k'));t.oncomplete=()=>{db.close();res(q&&q.result)};t.onerror=t.onabort=()=>{db.close();rej(t.error)}})}
 function qrTouch(){try{localStorage.setItem('nb_qr_exp',String(Date.now()+QR_MS))}catch(e){}}
 function qrClear(){try{localStorage.removeItem('nb_qr_exp')}catch(e){}try{qrTx('readwrite',s=>s.clear()).catch(()=>{})}catch(e){}}
-async function qrSave(pw,tok){
+async function qrSave(){
  try{
-  const key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']),iv=crypto.getRandomValues(new Uint8Array(12));
-  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify({pw,tok})));
-  await qrTx('readwrite',s=>s.put({key,iv,ct},'s'));
+  if(!shared||!cfg.tok||!localOn())return;
+  await saveLocalNow(); // the saved copy that the quick return will open
+  const sh=shared,key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']),iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify({tok:cfg.tok})));
+  await qrTx('readwrite',x=>x.put({v:2,key,iv,ct,dk:sh.key,salt:toB64(sh.salt)},'s'));
   if(loaded)qrTouch();else qrClear(); // locked while this was saving
  }catch(e){}
+}
+/* open the saved copy with the kept key: no password check, so it is instant */
+async function resumeFast(rec){
+ const c=readCache();
+ if(rec.v!==2||!rec.dk||!c||c.salt!==rec.salt)throw new Error('no quick return');
+ const dec=(k,iv,d)=>crypto.subtle.decrypt({name:'AES-GCM',iv},k,d).then(b=>JSON.parse(new TextDecoder().decode(b)));
+ const o=await dec(rec.key,rec.iv,rec.ct),p=await dec(rec.dk,fromB64(c.iv),fromB64(c.data));
+ keyCache=new Map([[c.salt,Promise.resolve(rec.dk)]]);
+ Object.assign(cfg,REPO);cfg.tok=o.tok;
+ store=fresh();shared={salt:fromB64(c.salt),key:rec.dk};restoreFrom(p);loaded=true;pendingSync=true;
+ enter();saveLocalSoon();qrTouch();syncAll(true,true);
 }
 async function autoResume(){
  try{
@@ -1289,11 +1302,7 @@ async function autoResume(){
   if(exp&&Date.now()>exp)qrClear();
   else if(exp){
    const rec=await qrTx('readonly',s=>s.get('s'));
-   if(rec){
-    const o=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:rec.iv},rec.key,rec.ct)));
-    $('#fTok').value=o.tok||'';$('#fPw').value=o.pw;
-    await $('#lockForm').onsubmit({preventDefault(){}});
-   }
+   if(rec)await resumeFast(rec);
   }
  }catch(e){}
  if(document.body.classList.contains('locked')){ // did not get in: show the normal login form
@@ -1335,7 +1344,7 @@ $('#lockForm').onsubmit=async e=>{
    if(o&&o!=='wrong'&&(cfg.tok||o.p.tok)){
     if(!cfg.tok)cfg.tok=o.p.tok;
     shared={salt:o.salt,key:o.key};restoreFrom(o.p);loaded=true;pendingSync=true;
-    enter();saveLocalSoon();qrSave(pw,cfg.tok);syncAll(true,true);
+    enter();saveLocalSoon();qrSave();syncAll(true,true);
     btn.disabled=false;btn.textContent='Unlock';return;
    }
    if(!cfg.tok){err.textContent=o==='wrong'?'Wrong password.':'Enter your username too.';btn.disabled=false;btn.textContent='Unlock';return}
@@ -1356,13 +1365,13 @@ $('#lockForm').onsubmit=async e=>{
    loaded=true;
    try{await migrate()}
    catch(e){lock();$('#lockErr').textContent='Storage upgrade did not finish. Nothing was lost, please try again. ('+e.message+')';btn.disabled=false;btn.textContent='Unlock';return}
-   enter();saveLocalSoon();qrSave(pw,cfg.tok);
+   enter();saveLocalSoon();qrSave();
    if(rec){pendingSync=true;updateNet();syncAll()}
   }
  }catch(ex){
   if(isNetErr(ex)){
    const r=await offlineUnlock(pw);
-   if(r==='ok'){enter();qrSave(pw,cfg.tok);toast('No internet: working from the copy saved on this device.')}
+   if(r==='ok'){enter();qrSave();toast('No internet: working from the copy saved on this device.')}
    else if(r==='wrong')err.textContent='Wrong password.';
    else err.textContent='No internet connection, and this device has no offline copy yet. Connect once and log in to set it up.';
   }else err.textContent=ex.message==='WRONG_PW'?'Wrong password.':ex.message;
