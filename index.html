@@ -289,10 +289,8 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
 @keyframes barIn{from{transform:scaleY(0)}to{transform:none}}
 #barInfo{min-height:1.5em;margin:.35rem 0 0;text-align:center}
 
-#undoExp,#undoNote{flex:0 0 auto;width:auto}
 @media(max-width:760px){
  body{display:block}
- #undoExp,#undoNote{flex:0 0 auto;width:auto}
  body::before,body::after{display:none}
  nav{position:fixed;left:.75rem;right:.75rem;top:auto;bottom:calc(.75rem + env(safe-area-inset-bottom));z-index:5;width:auto;height:auto;margin:0;padding:.35rem;border-radius:26px;flex-direction:row;gap:.15rem}
  nav .brand,nav .sp{display:none}
@@ -351,7 +349,7 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
   <div class="card swipe" id="noteCard">
     <div class="dayhd"><button type="button" id="dPrevDay" aria-label="Previous day">‹</button><h3 id="dlabel"></h3><button type="button" id="dNextDay" aria-label="Next day">›</button></div>
     <textarea id="note" placeholder="What happened today?"></textarea>
-    <div class="row"><button class="btn" id="saveNote">Save note</button><button class="btn ghost hide" id="undoNote" type="button">↶ Restore earlier text</button><span class="mute" id="noteSt"></span></div>
+    <div class="row"><button class="btn" id="saveNote">Save note</button><span class="mute" id="noteSt"></span></div>
   </div>
   <div class="card calcard"><div class="calh"><button id="prev" aria-label="Previous month">‹</button><button class="ml" id="mlabel" type="button" aria-label="Choose month and year"></button><button id="next" aria-label="Next month">›</button></div><div class="pk hide" id="dpk"></div><div class="grid" id="cal"></div></div>
 </section>
@@ -362,7 +360,7 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
     <div class="dayhd"><button type="button" id="ePrevDay" aria-label="Previous day">‹</button><h3 id="elabel"></h3><button type="button" id="eNextDay" aria-label="Next day">›</button></div>
     <textarea id="expIn" aria-label="Expenses and credits for this day" placeholder="Starbucks coffee 6&#10;Uber to work 12&#10;Credit Salary 50000"></textarea>
     <p class="mute" id="expHint">One entry per line with the amount at the end. Start a line with credit for money received. Add @Category at the end to set a category. It saves by itself.</p>
-    <div class="row"><button class="btn" id="addExp">Save</button><button class="btn ghost hide" id="undoExp" type="button">↶ Undo</button><span class="mute" id="expSt"></span></div>
+    <div class="row"><button class="btn" id="addExp">Save</button><span class="mute" id="expSt"></span></div>
   </div>
   <div class="card calcard"><div class="calh"><button id="eprev" aria-label="Previous month">‹</button><button class="ml" id="emlabel" type="button" aria-label="Choose month and year"></button><button id="enext" aria-label="Next month">›</button></div><div class="pk hide" id="epk"></div><div class="grid" id="ecal"></div></div>
   <div class="stats" id="expDetail"><div><span class="mute">Spent</span><b id="eSpent"></b></div><div><span class="mute">Credit</span><b id="eCredit"></b></div></div>
@@ -777,11 +775,7 @@ function syncAll(force,quiet){
   .finally(()=>{syncing=false;updateNet()});
 }
 function updateNet(){
- const el=$('#net');if(!el)return;
- el.classList.toggle('hide',!(loaded&&(pendingSync||offlineMode||syncing)));
- el.classList.toggle('sync',syncing);
- el.title='Tap to upload now';
- el.innerHTML=syncing?'⏳ Uploading…':navigator.onLine===false?'📴 Offline<span class="x"> · saved on device</span>':'⏳ Uploading soon<span class="x"> · tap to retry</span>';
+ const el=$('#net');if(el)el.classList.add('hide'); // sync status banner intentionally never shown
 }
 const trySync=()=>{if(loaded&&(pendingSync||offlineMode)&&navigator.onLine!==false)syncAll()};
 addEventListener('online',()=>{updateNet();trySync()});
@@ -863,7 +857,7 @@ function onSwipe(el,left,right){
 const stepDay=(k,n)=>{const d=new Date(k+'T00:00');d.setDate(d.getDate()+n);return ymd(d)};
 
 /* ---------- diary (auto-saves) ---------- */
-let selDay=TODAY,month=firstOfMonth(),noteDirty=false,noteTimer,bannerOff=false,pendingDay=null,noteHist={}; // noteHist: the longer text before a big cut, per day
+let selDay=TODAY,month=firstOfMonth(),noteDirty=false,noteTimer,bannerOff=false,pendingDay=null;
 const hasNote=(d,k)=>!!(d[k]&&d[k].trim());
 /* most recent day in the last 7 (before today) with no note, once the diary has started */
 function findPending(){
@@ -883,14 +877,12 @@ function renderDiary(){
  if(pendingDay)$('#bannerGo').textContent='You haven’t written your note for '+new Date(pendingDay+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short'})+' yet!';
  drawCal($('#cal'),$('#mlabel'),month,selDay,k=>hasNote(d,k));
  $('#dlabel').textContent=prettyDay(selDay);
- $('#undoNote').classList.toggle('hide',!noteHist[selDay]);
  $('#dNextDay').disabled=selDay>=TODAY;
  if(!noteDirty){$('#note').value=d[selDay]||'';$('#noteSt').textContent=''}
 }
 async function saveNote(day,text){
  clearTimeout(noteTimer);
  const d=store.diary.data,prev=d[day]||'';
- if(prev.length>=20&&text.trim().length<prev.length*.5){if(!noteHist[day]||noteHist[day].length<prev.length)noteHist[day]=prev;toast('Note shortened a lot. Tap “Restore earlier text” to bring it back.')}
  if(text.trim())d[day]=text;else delete d[day];
  $('#noteSt').textContent='Saving…';
  try{await push('diary','Diary '+day);const same=day===selDay&&$('#note').value===text;if(same)noteDirty=false;renderDiary();if(same)$('#noteSt').textContent=pendingSync?'Saved on this device':'Saved ✓'}
@@ -899,10 +891,6 @@ async function saveNote(day,text){
 function flushNote(){if(noteDirty&&loaded){noteDirty=false;saveNote(selDay,$('#note').value)}}
 $('#note').oninput=()=>{noteDirty=true;$('#noteSt').textContent='Typing…';clearTimeout(noteTimer);noteTimer=setTimeout(flushNote,5000)};
 $('#note').onblur=flushNote;
-$('#undoNote').onclick=async()=>{
- const t=noteHist[selDay];if(!t)return;delete noteHist[selDay];
- clearTimeout(noteTimer);noteDirty=false;$('#note').value=t;await saveNote(selDay,t);
-};
 $('#saveNote').onclick=()=>{noteDirty=false;saveNote(selDay,$('#note').value)};
 $('#cal').onclick=e=>{const b=e.target.closest('[data-d]');if(b){flushNote();selDay=b.dataset.d;renderDiary();popSel($('#cal'));toView($('#dlabel'))}};
 function moveDiary(n){
@@ -921,7 +909,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){flushNote(
 addEventListener('pagehide',()=>{flushNote();flushExp()});
 
 /* ---------- expenses ---------- */
-let expDay=TODAY,emonth=firstOfMonth(),expDirty=false,expTimer,expBad=[],expHist=[]; // expHist: what each save removed or changed, newest last (until you lock)
+let expDay=TODAY,emonth=firstOfMonth(),expDirty=false,expTimer,expBad=[];
 const sumA=a=>a.reduce((t,x)=>t+x.amount,0);
 const rawOf=x=>x.raw||`${x.text} ${x.amount}`;
 const CRRX=/^\s*credit(?!\s*card)\b/i;
@@ -948,7 +936,6 @@ function renderExp(force){
  const items=dayItems(expDay),sp=sumA(items.filter(x=>!x._cr)),gt=sumA(items.filter(x=>x._cr));
  countTo($('#eSpent'),sp);countTo($('#eCredit'),gt);
  $('#eDayCap').textContent='Totals for '+new Date(expDay+'T00:00').toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'});
- $('#undoExp').classList.toggle('hide',!expHist.some(h=>h.day===expDay));
  const box=$('#expIn');
  if(force||(!expDirty&&document.activeElement!==box)){
   box.value=items.map(boxLine).concat(expBad).join('\n');
@@ -987,7 +974,6 @@ async function saveExp(day,text){
  try{if(chE)await push('exp','Expenses '+day)}catch(e){store.exp.data=be;store.cr.data=bc;err=e}
  if(!err){try{if(chC)await push('cr','Credit '+day)}catch(e){store.cr.data=bc;err=e}}
  if(err){if(day===expDay){expDirty=true;$('#expSt').textContent='Not saved yet'}toast(err.message,1);return}
- if(lost){expHist.push({day,E:snapE,C:snapC});if(expHist.length>30)expHist.shift();toast(`${lost} line${lost>1?'s':''} removed or changed. Tap Undo to bring ${lost>1?'them':'it'} back.`)}
  if(day===expDay){
   if($('#expIn').value===text)expDirty=false;
   $('#expSt').textContent=badMsg||(unk.size?'Category not found: '+[...unk].join(', ')+'. It was sorted automatically.':(pendingSync?'Saved on this device':'Saved ✓'));
@@ -1007,16 +993,6 @@ $('#ePrevDay').onclick=()=>moveExp(-1);$('#eNextDay').onclick=()=>moveExp(1);
 onSwipe($('#expCard'),()=>moveExp(1),()=>moveExp(-1));
 $('#expIn').oninput=()=>{expDirty=true;$('#expSt').textContent='Typing…';clearTimeout(expTimer);expTimer=setTimeout(flushExp,4000)};
 $('#expIn').onblur=flushExp;
-$('#undoExp').onclick=async()=>{
- let i=-1;for(let j=expHist.length-1;j>=0;j--)if(expHist[j].day===expDay){i=j;break}
- if(i<0)return;
- const h=expHist.splice(i,1)[0],day=h.day,be=store.exp.data,bc=store.cr.data;
- clearTimeout(expTimer);expDirty=false;
- store.exp.data=be.filter(x=>x.date!==day).concat(h.E);store.cr.data=bc.filter(x=>x.date!==day).concat(h.C);
- try{await push('exp','Undo '+day);await push('cr','Undo '+day);toast('Restored.')}
- catch(e){store.exp.data=be;store.cr.data=bc;expHist.push(h);toast(e.message,1)}
- expBad=[];renderExp(true);
-};
 $('#addExp').onclick=async()=>{expDirty=false;await saveExp(expDay,$('#expIn').value);if(!expDirty){const st=$('#expSt').textContent;renderExp(true);$('#expSt').textContent=st}};
 $('#ecal').onclick=e=>{
  const b=e.target.closest('[data-d]');if(!b)return;
@@ -1537,7 +1513,7 @@ async function autoResume(){
  }
 }
 function lock(){
- qrClear();expHist=[];noteHist={};
+ qrClear();
  const lp=loaded&&shared&&localOn()?buildPayload():null,lsh=shared;
  if(lp)writeCache(lp,lsh);
  clearTimeout(idleT);noteDirty=false;store=fresh();keyCache=new Map();shared=null;cfg.tok='';loaded=false;offlineMode=false;pendingSync=false;updateNet();
