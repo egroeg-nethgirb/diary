@@ -137,6 +137,28 @@ td button:hover{color:var(--bad)}
 .leg li[data-cat]{padding:.15rem .4rem;margin:.05rem -.4rem;border-radius:12px}
 .leg li[data-cat]:focus-visible{outline:2px solid var(--acc)}
 @media(hover:hover){.leg li[data-cat]:hover{background:var(--acc2)}}
+#v-ask .askrow{display:flex;gap:.5rem;align-items:center}
+#v-ask .askrow input{flex:1;min-width:0}
+#v-ask .ex{margin:.7rem 0 0}
+#v-ask .ex li{padding:0}
+#v-ask .ex button{background:none;border:0;color:var(--ink);font:inherit;font-size:.9rem;padding:.4rem .8rem;min-height:36px;cursor:pointer}
+#askOut .big{font:500 2.1rem var(--serif);line-height:1.15;margin:.2rem 0}
+#askOut .big.c{color:var(--ok,#4caf86)}
+#askOut .sub{display:block;margin-bottom:.6rem}
+#askOut h4{margin:1rem 0 .3rem;font:600 .78rem var(--sans,inherit);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+#askOut .lr{display:flex;justify-content:space-between;gap:.8rem;padding:.38rem 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums lining-nums}
+#askOut .lr:last-child{border-bottom:0}
+#askOut .lr span:first-child{min-width:0;overflow-wrap:anywhere}
+#askOut .lr b{white-space:nowrap;font-weight:600}
+#askOut .lr .n{color:var(--mute);font-weight:400;font-size:.82rem}
+#askOut .cmp{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.4rem 0}
+#askOut .cmp>div{padding:.7rem .8rem;border-radius:18px;background:var(--glass-in);border:1px solid var(--line)}
+#askOut .cmp b{display:block;font:500 1.35rem var(--serif)}
+#askOut .delta{margin:.5rem 0 0}
+#askOut .mb{display:flex;align-items:center;gap:.5rem;margin:.22rem 0;font-size:.85rem;font-variant-numeric:tabular-nums}
+#askOut .mb em{font-style:normal;width:4.6rem;flex:none;color:var(--mute)}
+#askOut .mb i{display:block;height:7px;border-radius:4px;background:var(--acc)}
+#askOut .mb span{flex:1;min-width:0}
 #catPop{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:1rem 1rem calc(5.5rem + env(safe-area-inset-bottom));background:rgba(8,10,20,.45)}
 #catPop .box{width:100%;max-width:360px;max-height:min(70vh,520px);display:flex;flex-direction:column;padding:1rem 1.1rem;border-radius:26px;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow);animation:pop .22s cubic-bezier(.3,1.3,.5,1)}
 #catPop header{display:flex;align-items:flex-start;justify-content:space-between;gap:.6rem;margin-bottom:.5rem}
@@ -314,6 +336,7 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
   <button data-v="exp"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17v3"/><path d="M4 7.5v9A2.5 2.5 0 0 0 6.5 19H19a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 7.5z"/><circle cx="16" cy="13.5" r="1.1"/></svg></i><span>Expenses</span></button>
   <button data-v="dash"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 19.5v-7"/><path d="M12 19.5v-14"/><path d="M18.5 19.5v-9"/></svg></i><span>Dashboard</span></button>
   <div class="sp"></div>
+  <button data-v="ask"><i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2"/></svg></i><span>Ask</span></button>
   <button data-v="set"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h8"/><path d="M17 7h3"/><circle cx="14.5" cy="7" r="2.2"/><path d="M4 17h3"/><path d="M12 17h8"/><circle cx="9.5" cy="17" r="2.2"/></svg></i><span>Settings</span></button>
 </nav>
 <main>
@@ -371,6 +394,15 @@ main>section:not(.hide)>.swR{animation:swInR .26s cubic-bezier(.2,.7,.2,1)}
   </div>
 </section>
 
+<section id="v-ask" class="hide">
+  <h1>Ask</h1>
+  <div class="card">
+    <form class="askrow" id="askForm" autocomplete="off"><input id="askIn" type="text" enterkeyhint="search" placeholder="e.g. how much on tea in 2025?" aria-label="Ask about your entries"><button class="btn" type="submit">Ask</button></form>
+    <ul class="chips ex" id="askEx"></ul>
+    <p class="mute" style="margin:.7rem 0 0;font-size:.85rem">Answers come from your own entries, worked out on this device. Nothing is sent anywhere.</p>
+  </div>
+  <div class="card hide" id="askOut" aria-live="polite"></div>
+</section>
 <section id="v-set" class="hide">
   <h1>Settings</h1>
   <div class="card set">
@@ -765,7 +797,7 @@ addEventListener('pagehide',()=>{saveLocalNow()});
 let tt;
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(tt);tt=setTimeout(()=>t.className='',3500)}
 function show(v){flushNote();flushExp();$('#catPop').classList.add('hide');if(v==='dash')_cnt=new WeakMap();
- ['diary','exp','dash','set'].forEach(k=>$('#v-'+k).classList.toggle('hide',k!==v));
+ ['diary','exp','dash','ask','set'].forEach(k=>$('#v-'+k).classList.toggle('hide',k!==v));
  $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
  render();
 }
@@ -1170,6 +1202,180 @@ $('#pie').addEventListener('click',e=>{
  openCat(pieEnt[pieEnt.length-1][0]);
 });
 
+/* ASK-START */
+/* ---------- Ask: questions about your own entries, answered on this device ----------
+   askParse(question) turns words into a plain query object; askRun(query, ...) does the maths on your data.
+   Nothing is sent anywhere. The query object is also the seam where an AI could be plugged in later. */
+const ASK_CATS={food:'Food',eating:'Food',meals:'Food',grocery:'Groceries',groceries:'Groceries',transport:'Transportation',transportation:'Transportation',travel:'Transportation',stay:'Stay',accommodation:'Stay',bills:'Bills & Utilities',utilities:'Bills & Utilities',education:'Education',study:'Education',care:'Personal Care',fun:'Fun',entertainment:'Fun',shopping:'Shopping',health:'Health',medical:'Health',other:'Other'};
+const ASK_STOP=new Set('a an the i me my we is are was were do does did how much many what whats which show give tell find get have has had of on in for at to by with and or all any total totals sum summary spend spending paid pay cost costs expense expenses money rs rupees inr amount please can you could would should list entries entry items item during since from about per than that this these those it its'.split(' '));
+const ASK_CREDIT=new Set(['credit','credits','received','receive','income','earned','earnings','got']);
+const ASK_SPENT=new Set(['spent','spend','spending','paid','cost','costs','expense','expenses']);
+const ASK_MON={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+const ASK_ALL={from:'0000-01-01',to:'9999-12-31',label:'all time',kind:'all'};
+const ASK_PER=/\b(today|yesterday|this week|last week|this month|last month|this year|last year|(?:last|past)\s+(\d+)\s+(day|week|month|year)s?|all time|overall|(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+(20\d\d))?|(20\d\d))\b/g;
+const askMk=(y,m,d)=>new Date(y,m,d);
+const askMonthName=(y,m)=>askMk(y,m,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+function askMonthRange(y,m){return {from:ymd(askMk(y,m,1)),to:ymd(askMk(y,m+1,0)),label:askMonthName(y,m),kind:'month',y,m}}
+function askYearRange(y){return {from:y+'-01-01',to:y+'-12-31',label:String(y),kind:'year',y}}
+function askResolve(m,today){
+ const T=new Date(today+'T00:00'),y=T.getFullYear(),mo=T.getMonth(),d=T.getDate(),w=m[1];
+ if(m[6])return askYearRange(+m[6]);
+ if(m[4]){const mi=ASK_MON[m[4].slice(0,3)];let yy=m[5]?+m[5]:y;if(!m[5]&&mi>mo)yy--;return askMonthRange(yy,mi)}
+ if(w==='today')return {from:today,to:today,label:'today',kind:'day'};
+ if(w==='yesterday'){const t=ymd(askMk(y,mo,d-1));return {from:t,to:t,label:'yesterday',kind:'day'}}
+ if(w==='this week'||w==='last week'){const dow=(T.getDay()+6)%7,off=w==='this week'?0:7,a=askMk(y,mo,d-dow-off),b=askMk(y,mo,d-dow-off+6);return {from:ymd(a),to:ymd(b),label:w,kind:'week'}}
+ if(w==='this month')return {...askMonthRange(y,mo),label:'this month ('+askMonthName(y,mo)+')'};
+ if(w==='last month'){const r=askMonthRange(y,mo-1);return {...r,label:'last month ('+r.label+')'}}
+ if(w==='this year')return {...askYearRange(y),label:'this year ('+y+')'};
+ if(w==='last year')return {...askYearRange(y-1),label:'last year ('+(y-1)+')'};
+ if(w==='all time'||w==='overall')return ASK_ALL;
+ const n=+m[2],u=m[3],a=new Date(T);
+ if(u==='day')a.setDate(a.getDate()-n+1);else if(u==='week')a.setDate(a.getDate()-n*7+1);else if(u==='month'){a.setMonth(a.getMonth()-n);a.setDate(a.getDate()+1)}else{a.setFullYear(a.getFullYear()-n);a.setDate(a.getDate()+1)}
+ return {from:ymd(a),to:today,label:'last '+n+' '+u+(n>1?'s':''),kind:'days'};
+}
+function askPrev(p){ // the period just before this one
+ if(p.kind==='month')return askMonthRange(p.y,p.m-1);
+ if(p.kind==='year')return askYearRange(p.y-1);
+ const a=new Date(p.from+'T00:00'),b=new Date(p.to+'T00:00'),n=Math.round((b-a)/864e5)+1,e=new Date(a);e.setDate(e.getDate()-1);const s=new Date(e);s.setDate(s.getDate()-n+1);
+ return {from:ymd(s),to:ymd(e),label:'the '+n+' day'+(n>1?'s':'')+' before',kind:p.kind};
+}
+function askParse(q,today){
+ let s=' '+String(q||'').toLowerCase().replace(/[₹$,?!"“”]/g,' ').replace(/\s+/g,' ')+' ';
+ const intents=new Set(),periods=[];
+ const flag=(re,name)=>{s=s.replace(re,()=>{intents.add(name);return ' '})};
+ flag(/\b(?:vs\.?|versus|compared? (?:to|with)|against|compare)\b/g,'compare');
+ flag(/\b(?:(?:per|by|each|every) month|monthly|month by month)\b/g,'bymonth');
+ flag(/\b(?:per day|daily|average|avg|mean)\b/g,'avg');
+ flag(/\b(?:top|biggest|largest|highest|most expensive|costliest|most)\b/g,'top');
+ flag(/\b(?:how many(?: times)?|count|number of|times)\b/g,'count');
+ s=s.replace(ASK_PER,(...m)=>{periods.push(askResolve(m,today));return ' '});
+ const cats=allCats(),lower={};Object.keys(cats).forEach(n=>lower[n.toLowerCase()]=n);
+ let cat=null;
+ for(const n of Object.keys(lower))if(n.includes(' ')&&s.includes(' '+n+' ')){cat=lower[n];s=s.replace(' '+n+' ',' ')}
+ let mode='auto';const subj=[];
+ for(const t of s.split(/[^a-z0-9&'+-]+/).filter(Boolean)){
+  if(ASK_CREDIT.has(t)){mode='credit';continue}
+  if(ASK_SPENT.has(t)){if(mode!=='credit')mode='spent';continue}
+  if(ASK_STOP.has(t))continue;
+  if(!cat&&(ASK_CATS[t]||lower[t])){cat=ASK_CATS[t]||lower[t];if(!cats[cat])cat=lower[t]||null;if(cat)continue}
+  subj.push(t);
+ }
+ if(periods.length>1)intents.add('compare');
+ return {q:String(q||'').trim(),mode,intents:[...intents],periods,cat,subj};
+}
+const askNorm=t=>(t||'').toLowerCase().replace(TIMEWORDS,' ').replace(/\s+/g,' ').trim();
+function askMatch(x,subj){
+ if(!subj.length)return true;
+ const words=askNorm(x.text).split(/[^a-z0-9&'+-]+/).filter(Boolean);
+ return subj.every(t=>(t.length>3?[t,t.replace(/(?:es|s)$/,'')]:[t]).some(v=>words.some(w=>w===v||(v.length>=3&&w.startsWith(v)))));
+}
+function askSlice(p,exp,cr,per){
+ const inR=x=>x.date>=per.from&&x.date<=per.to;
+ let E=exp.filter(x=>inR(x)&&(!p.cat||normCat(x.cat)===p.cat)&&askMatch(x,p.subj));
+ let C=p.cat?[]:cr.filter(x=>inR(x)&&askMatch(x,p.subj));
+ if(p.mode==='credit')E=[];
+ if(p.mode==='spent')C=[];
+ return {E,C};
+}
+const askSum=a=>a.reduce((t,x)=>t+x.amount,0);
+function askGroup(list){
+ const m=new Map();
+ for(const x of list){const k=askNorm(x.text)||'meal';let r=m.get(k);if(!r)m.set(k,r={name:k,sum:0,n:0});r.sum+=x.amount;r.n++}
+ return [...m.values()].sort((a,b)=>b.sum-a.sum);
+}
+function askRun(p,exp,cr,today){
+ if(p.intents.includes('compare')&&!p.periods.length&&p.subj.length===2&&!p.cat){ // "tea vs coffee": two things over all time
+  const one=t=>{const q={...p,subj:[t]},{E,C}=askSlice(q,exp,cr,ASK_ALL);return {name:t,spent:askSum(E),n:E.length,got:askSum(C)}};
+  return {versus:true,A:one(p.subj[0]),B:one(p.subj[1])};
+ }
+ if(p.intents.includes('compare')){
+  let [A,B]=p.periods;
+  if(!A){const t=new Date(today+'T00:00');A=askMonthRange(t.getFullYear(),t.getMonth());B=askMonthRange(t.getFullYear(),t.getMonth()-1)}
+  else if(!B)B=askPrev(A);
+  const a=askSlice(p,exp,cr,A),b=askSlice(p,exp,cr,B),res={compare:true,A:{per:A,spent:askSum(a.E),got:askSum(a.C),n:a.E.length+a.C.length},B:{per:B,spent:askSum(b.E),got:askSum(b.C),n:b.E.length+b.C.length},cats:[]};
+  if(!p.cat&&!p.subj.length&&p.mode!=='credit'){
+   const by={};a.E.forEach(x=>{const c=normCat(x.cat);(by[c]=by[c]||{a:0,b:0}).a+=x.amount});b.E.forEach(x=>{const c=normCat(x.cat);(by[c]=by[c]||{a:0,b:0}).b+=x.amount});
+   res.cats=Object.entries(by).map(([c,v])=>({c,a:v.a,b:v.b})).sort((x,y)=>Math.max(y.a,y.b)-Math.max(x.a,x.b));
+  }
+  return res;
+ }
+ const per=p.periods[0]||ASK_ALL,{E,C}=askSlice(p,exp,cr,per);
+ const res={per,E,C,spent:askSum(E),got:askSum(C),nE:E.length,nC:C.length};
+ res.items=askGroup(E);res.creditItems=askGroup(C);
+ res.biggest=[...E].sort((x,y)=>y.amount-x.amount).slice(0,5);
+ res.recent=[...E.map(x=>({...x,_k:'s'})),...C.map(x=>({...x,_k:'c'}))].sort((x,y)=>y.date<x.date?-1:y.date>x.date?1:0).slice(0,8);
+ // totals per month (or per year when the range is long)
+ const keys=[...E,...C].map(x=>x.date);
+ if(keys.length){
+  const lo=keys.reduce((a,b)=>a<b?a:b),hi=keys.reduce((a,b)=>a>b?a:b),months=(+hi.slice(0,4)-+lo.slice(0,4))*12+(+hi.slice(5,7)-+lo.slice(5,7))+1,len=months>24?4:7;
+  const b={};E.forEach(x=>{const k=x.date.slice(0,len);(b[k]=b[k]||{s:0,c:0}).s+=x.amount});C.forEach(x=>{const k=x.date.slice(0,len);(b[k]=b[k]||{s:0,c:0}).c+=x.amount});
+  res.buckets=Object.keys(b).sort().map(k=>({k,s:b[k].s,c:b[k].c}));res.bucketLen=len;
+  const first=lo,last=per.to<today?per.to:today,from=per.from>first?per.from:first,days=Math.max(1,Math.round((new Date((last<hi?hi:last)+'T00:00')-new Date(from+'T00:00'))/864e5)+1);
+  res.days=days;res.months=months;
+ }
+ return res;
+}
+/* ASK-END */
+
+function askMoney(n){return money(n)}
+const askCap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+function askRows(list,n,max){return list.slice(0,n).map(r=>`<div class="lr"><span>${esc(askCap(r.name))}${r.n>1?` <span class="n">×${r.n}</span>`:''}</span><b>${askMoney(r.sum)}</b></div>`).join('')}
+function askLabel(p){
+ const bits=[];if(p.cat)bits.push(catInfo(p.cat).icon+' '+p.cat);if(p.subj.length)bits.push('“'+p.subj.join(' ')+'”');
+ return bits.join(' · ');
+}
+function askView(q){
+ const p=askParse(q,TODAY),r=askRun(p,store.exp.data,store.cr.data,TODAY),what=askLabel(p);
+ if(r.versus){
+  const f=x=>`<div><span class="mute">${esc(askCap(x.name))}</span><b>${askMoney(x.spent)}</b><span class="mute">${x.n} time${x.n===1?'':'s'}</span></div>`;
+  const d=r.A.spent-r.B.spent,w=d>=0?r.A:r.B;
+  return `<span class="mute sub">All time</span><div class="cmp">${f(r.A)}${f(r.B)}</div>`+(r.A.n+r.B.n?`<p class="delta">${esc(askCap(w.name))} is higher by <b>${askMoney(Math.abs(d))}</b>.</p>`:'<p class="mute">Nothing found for either.</p>');
+ }
+ if(r.compare){
+  const f=x=>`<div><span class="mute">${esc(x.per.label)}</span><b>${askMoney(x.spent)}</b>${x.got?`<span class="mute">credit ${askMoney(x.got)}</span>`:`<span class="mute">${x.n} entr${x.n===1?'y':'ies'}</span>`}</div>`;
+  const d=r.A.spent-r.B.spent;
+  let h=`<span class="mute sub">${esc(what||'All spending')}</span><div class="cmp">${f(r.A)}${f(r.B)}</div>`;
+  if(r.A.spent||r.B.spent)h+=`<p class="delta">${d===0?'The same.':`${esc(askCap(r.A.per.label.replace(/ \(.*\)/,'')))} is <b>${askMoney(Math.abs(d))}</b> ${d>0?'more':'less'}${r.B.spent?` (${Math.round(Math.abs(d)/r.B.spent*100)}%)`:''}.`}</p>`;
+  if(r.cats.length){h+='<h4>By category</h4>'+r.cats.slice(0,8).map(x=>`<div class="lr"><span>${catInfo(x.c).icon} ${esc(x.c)}</span><b>${askMoney(x.a)} <span class="n">vs ${askMoney(x.b)}</span></b></div>`).join('')}
+  return h;
+ }
+ const credit=p.mode==='credit',both=!credit&&p.mode==='auto'&&r.nC>0&&r.nE>0;
+ if(!r.nE&&!r.nC)return `<span class="mute sub">${esc(r.per.label)}${what?' · '+esc(what):''}</span><p>Nothing found. Try another word, or a different period such as <i>this month</i> or <i>2025</i>.</p>`;
+ let h=`<span class="mute sub">${esc(askCap(r.per.label))}${what?' · '+esc(what):''}</span>`;
+ if(credit)h+=`<div class="big c">${askMoney(r.got)}</div><span class="mute">${r.nC} credit${r.nC===1?'':'s'}</span>`;
+ else h+=`<div class="big">${askMoney(r.spent)}</div><span class="mute">${r.nE} entr${r.nE===1?'y':'ies'}${r.nE?` · avg ${askMoney(r.spent/r.nE)} each`:''}</span>`+(both?`<p class="delta">Credits matching: <b>${askMoney(r.got)}</b> (${r.nC})</p>`:'');
+ const I=p.intents;
+ if(!credit&&r.nE&&r.days>1&&(I.includes('avg')||r.per.kind==='month'||r.per.kind==='year')){
+  const perDay=r.spent/r.days,perMonth=r.months>1?r.spent/r.months:0;
+  h+=`<p class="delta">About <b>${askMoney(perDay)}</b> a day${perMonth?` · <b>${askMoney(perMonth)}</b> a month`:''}.</p>`;
+ }
+ if(!credit&&r.nE){
+  if(I.includes('count')||(p.subj.length&&r.nE))h+=`<p class="delta">Bought <b>${r.nE}</b> time${r.nE===1?'':'s'} on ${new Set(r.E.map(x=>x.date)).size} day${new Set(r.E.map(x=>x.date)).size===1?'':'s'}.</p>`;
+  if(r.items.length>1||!p.subj.length)h+='<h4>'+(p.cat||p.subj.length?'Items':'Biggest items')+'</h4>'+askRows(r.items,6);
+  if(I.includes('top')||r.nE>3){h+='<h4>Single biggest</h4>'+r.biggest.slice(0,3).map(x=>`<div class="lr"><span>${esc(askCap(askNorm(x.text)||'meal'))} <span class="n">${esc(fmtDate(x.date))}</span></span><b>${askMoney(x.amount)}</b></div>`).join('')}
+ }
+ if(credit&&r.creditItems.length)h+='<h4>From</h4>'+askRows(r.creditItems,8);
+ if(r.buckets&&r.buckets.length>1&&(I.includes('bymonth')||r.per.kind==='year'||r.per.kind==='all'||r.per.kind==='days')){
+  const key=credit?'c':'s',mx=Math.max(...r.buckets.map(b=>b[key]),1);
+  h+='<h4>'+(r.bucketLen===4?'By year':'By month')+'</h4>'+r.buckets.map(b=>{const lab=r.bucketLen===4?b.k:new Date(b.k+'-01T00:00').toLocaleDateString(undefined,{month:'short',year:'2-digit'});return `<div class="mb"><em>${lab}</em><span><i style="width:${Math.max(2,b[key]/mx*100)}%"></i></span><b>${askMoney(b[key])}</b></div>`}).join('');
+ }
+ return h;
+}
+function fmtDate(d){return new Date(d+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}
+function askGo(q){
+ q=(q||'').trim();if(!q)return;
+ const out=$('#askOut');out.classList.remove('hide');
+ try{out.innerHTML=askView(q)}catch(e){out.innerHTML='<p>Sorry, I could not work that one out.</p>'}
+}
+function renderAsk(){
+ const ex=$('#askEx');
+ if(!ex.children.length){
+  ex.innerHTML=['Spent this month','This month vs last month','Biggest expenses last year','Tea vs coffee','Credits this year','Groceries by month this year'].map(t=>`<li><button type="button">${t}</button></li>`).join('');
+ }
+}
+$('#askForm').onsubmit=e=>{e.preventDefault();askGo($('#askIn').value);$('#askIn').blur()};
+$('#askEx').addEventListener('click',e=>{const b=e.target.closest('button');if(b){$('#askIn').value=b.textContent;askGo(b.textContent)}});
+
 /* ---------- settings: categories, keywords, short forms ---------- */
 function renderSetLists(){
  const ac=allCats(),sd=SD(),names=Object.keys(ac),custom=sd.custom||[];
@@ -1450,10 +1656,11 @@ if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventLis
 
 autoResume();
 function render(){
- const v=['diary','exp','dash','set'].find(k=>!$('#v-'+k).classList.contains('hide'));
+ const v=['diary','exp','dash','ask','set'].find(k=>!$('#v-'+k).classList.contains('hide'));
  if(v==='diary')renderDiary();
  if(v==='exp')renderExp();
  if(v==='dash')renderDash();
+ if(v==='ask')renderAsk();
  if(v==='set')renderSet();
 }
 
